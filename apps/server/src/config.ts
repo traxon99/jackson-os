@@ -59,6 +59,10 @@ export function logDisabledSources(
   }
 }
 
+export const CONFIG_ENV_KEYS = Object.keys(
+  configSchema.shape,
+) as (keyof AppConfig)[];
+
 export type ReadFileFn = (path: string) => string;
 
 export class ConfigError extends Error {
