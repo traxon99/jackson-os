@@ -36,6 +36,6 @@ Every PR must include a **How I verified** section: the commands you ran and eno
 ## Further reading
 
 - [docs/DECISIONS.md](docs/DECISIONS.md)
-- [docs/SECURITY.md](docs/SECURITY.md) _(coming)_
+- [docs/SECURITY.md](docs/SECURITY.md)
 - [docs/ADDING-A-SOURCE.md](docs/ADDING-A-SOURCE.md) _(coming)_
 - [docs/PWA.md](docs/PWA.md) _(coming)_
