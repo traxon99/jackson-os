@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.github
+coverage
+*.db
+*.db-*
+/data
+.env
+deploy/secrets/*
+!deploy/secrets/.gitkeep
+.claude
+.cursor
