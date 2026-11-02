@@ -15,6 +15,13 @@
       "when": 1793644051228,
       "tag": "0001_bent_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793646402848,
+      "tag": "0002_session_scope",
+      "breakpoints": true
     }
   ]
 }

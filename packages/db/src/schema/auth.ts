@@ -16,6 +16,9 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: integer('expires_at').notNull(),
   lastSeenAt: integer('last_seen_at').notNull(),
   userAgent: text('user_agent'),
+  scope: text('scope', { enum: ['full', 'recovery'] })
+    .notNull()
+    .default('full'),
 });
 
 export const recoveryCodes = sqliteTable('recovery_codes', {
