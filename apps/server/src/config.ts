@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -12,6 +13,10 @@ const configSchema = z.object({
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
+
+export const SECRET_KEYS = ['SETUP_TOKEN'] as const;
+
+export type ReadFileFn = (path: string) => string;
 
 export class ConfigError extends Error {
   constructor(message: string) {
@@ -49,14 +54,47 @@ function formatConfigErrors(error: z.ZodError): string {
   return lines.join('\n');
 }
 
-export function loadConfig(env: Record<string, string | undefined>): AppConfig {
+export function resolveFileVars(
+  env: Record<string, string | undefined>,
+  readFile: ReadFileFn,
+): Record<string, string | undefined> {
+  const resolved = { ...env };
+
+  for (const key of SECRET_KEYS) {
+    const fileVar = `${key}_FILE`;
+    const filePath = env[fileVar];
+    if (filePath === undefined || filePath === '') {
+      continue;
+    }
+
+    const directValue = env[key];
+    if (directValue !== undefined && directValue !== '') {
+      throw new ConfigError(`${key}: cannot set both ${key} and ${fileVar}`);
+    }
+
+    try {
+      resolved[key] = readFile(filePath).trim();
+    } catch {
+      throw new ConfigError(`${key}: failed to read secret file`);
+    }
+  }
+
+  return resolved;
+}
+
+export function loadConfig(
+  env: Record<string, string | undefined>,
+  readFile: ReadFileFn = (path) => readFileSync(path, 'utf8'),
+): AppConfig {
+  const resolvedEnv = resolveFileVars(env, readFile);
+
   const input = {
-    NODE_ENV: env.NODE_ENV,
-    PORT: env.PORT,
-    APP_ORIGIN: env.APP_ORIGIN,
-    DATA_DIR: env.DATA_DIR,
-    RP_ID: env.RP_ID,
-    SETUP_TOKEN: env.SETUP_TOKEN,
+    NODE_ENV: resolvedEnv.NODE_ENV,
+    PORT: resolvedEnv.PORT,
+    APP_ORIGIN: resolvedEnv.APP_ORIGIN,
+    DATA_DIR: resolvedEnv.DATA_DIR,
+    RP_ID: resolvedEnv.RP_ID,
+    SETUP_TOKEN: resolvedEnv.SETUP_TOKEN,
   };
 
   const result = configSchema.safeParse(input);

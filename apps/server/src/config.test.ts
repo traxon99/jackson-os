@@ -1,5 +1,70 @@
 import { describe, expect, it } from 'vitest';
-import { ConfigError, loadConfig } from './config.js';
+import {
+  ConfigError,
+  loadConfig,
+  resolveFileVars,
+  SECRET_KEYS,
+} from './config.js';
+
+describe('SECRET_KEYS', () => {
+  it('lists SETUP_TOKEN', () => {
+    expect(SECRET_KEYS).toEqual(['SETUP_TOKEN']);
+  });
+});
+
+describe('resolveFileVars', () => {
+  it('reads secret from file and trims whitespace', () => {
+    const token = 'a'.repeat(32);
+    const env = resolveFileVars(
+      { SETUP_TOKEN_FILE: '/run/secrets/setup' },
+      () => `  ${token}\n`,
+    );
+
+    expect(env.SETUP_TOKEN).toBe(token);
+  });
+
+  it('throws when both direct value and _FILE are set', () => {
+    expect(() =>
+      resolveFileVars(
+        {
+          SETUP_TOKEN: 'direct-value',
+          SETUP_TOKEN_FILE: '/run/secrets/setup',
+        },
+        () => 'file-value',
+      ),
+    ).toThrow(ConfigError);
+
+    try {
+      resolveFileVars(
+        {
+          SETUP_TOKEN: 'direct-value',
+          SETUP_TOKEN_FILE: '/run/secrets/setup',
+        },
+        () => 'file-value',
+      );
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigError);
+      expect((error as ConfigError).message).toContain('SETUP_TOKEN');
+    }
+  });
+
+  it('throws naming the key when the file cannot be read', () => {
+    expect(() =>
+      resolveFileVars({ SETUP_TOKEN_FILE: '/missing/path' }, () => {
+        throw new Error('ENOENT');
+      }),
+    ).toThrow(ConfigError);
+
+    try {
+      resolveFileVars({ SETUP_TOKEN_FILE: '/missing/path' }, () => {
+        throw new Error('ENOENT');
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigError);
+      expect((error as ConfigError).message).toContain('SETUP_TOKEN');
+    }
+  });
+});
 
 describe('loadConfig', () => {
   it('throws ConfigError naming APP_ORIGIN when missing', () => {
@@ -23,6 +88,19 @@ describe('loadConfig', () => {
       RP_ID: 'os.jacksonyanek.com',
       SETUP_TOKEN: undefined,
     });
+  });
+
+  it('loads SETUP_TOKEN from SETUP_TOKEN_FILE via injectable readFile', () => {
+    const token = 'b'.repeat(32);
+    const config = loadConfig(
+      {
+        APP_ORIGIN: 'https://app.example.com',
+        SETUP_TOKEN_FILE: '/secrets/setup',
+      },
+      () => `${token}\n`,
+    );
+
+    expect(config.SETUP_TOKEN).toBe(token);
   });
 
   it('never includes SETUP_TOKEN value in error text', () => {
