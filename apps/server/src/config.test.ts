@@ -2,13 +2,21 @@ import { describe, expect, it } from 'vitest';
 import {
   ConfigError,
   loadConfig,
+  logDisabledSources,
   resolveFileVars,
   SECRET_KEYS,
+  sourceStatus,
 } from './config.js';
 
 describe('SECRET_KEYS', () => {
-  it('lists SETUP_TOKEN', () => {
-    expect(SECRET_KEYS).toEqual(['SETUP_TOKEN']);
+  it('lists all secret env keys', () => {
+    expect(SECRET_KEYS).toEqual([
+      'SETUP_TOKEN',
+      'JIM_PAT',
+      'GITHUB_TOKEN',
+      'CLOUDFLARE_API_TOKEN',
+      'CLOUDFLARE_ZONE_ID',
+    ]);
   });
 });
 
@@ -87,6 +95,10 @@ describe('loadConfig', () => {
       DATA_DIR: '/data',
       RP_ID: 'os.jacksonyanek.com',
       SETUP_TOKEN: undefined,
+      JIM_PAT: undefined,
+      GITHUB_TOKEN: undefined,
+      CLOUDFLARE_API_TOKEN: undefined,
+      CLOUDFLARE_ZONE_ID: undefined,
     });
   });
 
@@ -119,5 +131,72 @@ describe('loadConfig', () => {
       expect(message).toContain('SETUP_TOKEN');
       expect(message).not.toContain(secret);
     }
+  });
+});
+
+describe('sourceStatus', () => {
+  const base = loadConfig({ APP_ORIGIN: 'https://app.example.com' });
+
+  it('marks sources disabled when tokens are missing', () => {
+    expect(sourceStatus(base)).toEqual({
+      jim: 'disabled',
+      github: 'disabled',
+      portfolio: 'disabled',
+    });
+  });
+
+  it('enables portfolio only when both Cloudflare values are set', () => {
+    expect(
+      sourceStatus({
+        ...base,
+        CLOUDFLARE_API_TOKEN: 'token',
+        CLOUDFLARE_ZONE_ID: undefined,
+      }),
+    ).toEqual({
+      jim: 'disabled',
+      github: 'disabled',
+      portfolio: 'disabled',
+    });
+
+    expect(
+      sourceStatus({
+        ...base,
+        CLOUDFLARE_API_TOKEN: 'token',
+        CLOUDFLARE_ZONE_ID: 'zone',
+      }),
+    ).toEqual({
+      jim: 'disabled',
+      github: 'disabled',
+      portfolio: 'enabled',
+    });
+  });
+
+  it('enables jim and github when their tokens are present', () => {
+    expect(
+      sourceStatus({
+        ...base,
+        JIM_PAT: 'jim-secret',
+        GITHUB_TOKEN: 'gh-secret',
+      }),
+    ).toEqual({
+      jim: 'enabled',
+      github: 'enabled',
+      portfolio: 'disabled',
+    });
+  });
+});
+
+describe('logDisabledSources', () => {
+  it('logs each disabled source once', () => {
+    const messages: string[] = [];
+    const config = loadConfig({ APP_ORIGIN: 'https://app.example.com' });
+
+    logDisabledSources(config, (message) => messages.push(message));
+
+    expect(messages).toEqual([
+      'jim source disabled',
+      'github source disabled',
+      'portfolio source disabled',
+    ]);
   });
 });

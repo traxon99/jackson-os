@@ -1,6 +1,11 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app.js';
-import { type AppConfig, ConfigError, loadConfig } from './config.js';
+import {
+  type AppConfig,
+  ConfigError,
+  loadConfig,
+  logDisabledSources,
+} from './config.js';
 
 let config: AppConfig;
 try {
@@ -12,6 +17,8 @@ try {
   }
   throw error;
 }
+
+logDisabledSources(config);
 
 const app = createApp();
 
