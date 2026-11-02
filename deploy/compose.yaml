@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ORIGIN: http://localhost:8080
+      SETUP_TOKEN_FILE: /run/secrets/setup_token
+    volumes:
+      - jos-data:/data
+    secrets:
+      - setup_token
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles:
+      - tunnel
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/tunnel_token
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - 'exec cloudflared tunnel run --token "$(cat "$$TUNNEL_TOKEN_FILE")"'
+    secrets:
+      - tunnel_token
+
+secrets:
+  setup_token:
+    file: ./secrets/setup_token
+  tunnel_token:
+    file: ./secrets/tunnel_token
+
+volumes:
+  jos-data:
