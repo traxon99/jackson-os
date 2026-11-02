@@ -10,6 +10,7 @@ import { createGetSession, type GetSession } from '../middleware/auth-gate.js';
 import { createAuthLoginRoutes } from './auth-login.js';
 import { createAuthRegisterRoutes } from './auth-register.js';
 import { mountAuthSessionRoutes } from './auth-session.js';
+import { mountPasskeyRoutes } from './passkeys.js';
 import { createRecoverRoutes } from './recover.js';
 
 export type AuthServices = { sessions: SessionService; getSession: GetSession };
@@ -76,4 +77,5 @@ export function mountAuthRoutes(
       log,
     }),
   );
+  mountPasskeyRoutes(api, credentials);
 }
