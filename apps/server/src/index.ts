@@ -33,7 +33,7 @@ const dbPath = join(config.DATA_DIR, 'app.db');
 const dbConn = openDb(dbPath);
 runMigrations(dbConn.db);
 
-const app = createApp(config);
+const app = createApp({ ...config, logger });
 
 const server = serve({
   fetch: app.fetch,
