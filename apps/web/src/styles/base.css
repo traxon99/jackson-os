@@ -1,0 +1,63 @@
+@layer base;
+
+/* Jim PWA.md §1 — prevent overscroll chaining on the root */
+:root {
+  overscroll-behavior: none;
+}
+
+/* Jim PWA.md §2 — lock the viewport; use lvh for stable mobile height */
+body {
+  position: fixed;
+  inset: 0;
+  height: 100lvh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Jim PWA.md §2 — respect the notch / home indicator */
+body {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Jim PWA.md §3 — flex column with min-height: 0 down to the scroll surface */
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+main.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Jim PWA.md §4 — avoid iOS zoom on focus */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@layer base {
+  /* Jim PWA.md §4 — remove double-tap zoom delay */
+  html {
+    touch-action: manipulation;
+  }
+}
+
+/* Jim PWA.md §5 — native feel when installed (class added in standalone.ts) */
+body.pwa {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+body.pwa input,
+body.pwa select,
+body.pwa textarea,
+body.pwa [contenteditable="true"] {
+  user-select: text;
+}

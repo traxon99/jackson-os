@@ -19,5 +19,9 @@ export function App() {
       });
   }, []);
 
-  return <p>{message ?? '…'}</p>;
+  return (
+    <main className="scroll">
+      <p>{message ?? '…'}</p>
+    </main>
+  );
 }

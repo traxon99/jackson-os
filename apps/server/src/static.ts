@@ -12,8 +12,21 @@ function pathHasFileExtension(pathname: string): boolean {
   return dot > 0 && dot < base.length - 1;
 }
 
+function shouldSendNoCache(pathname: string): boolean {
+  return (
+    pathname === '/sw.js' || pathname === '/' || pathname === '/index.html'
+  );
+}
+
 export function mountStatic(app: Hono, webDist: string): void {
   const indexHtml = readFileSync(join(webDist, 'index.html'), 'utf8');
+
+  app.use('*', async (c, next) => {
+    await next();
+    if (shouldSendNoCache(c.req.path)) {
+      c.header('Cache-Control', 'no-cache');
+    }
+  });
 
   app.use(
     '*',
@@ -30,6 +43,7 @@ export function mountStatic(app: Hono, webDist: string): void {
     if (pathHasFileExtension(c.req.path)) {
       return c.notFound();
     }
+    c.header('Cache-Control', 'no-cache');
     return c.html(indexHtml);
   });
 }
