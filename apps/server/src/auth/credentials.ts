@@ -58,7 +58,33 @@ export function createCredentialsStore(db: BetterSQLite3Database) {
       .run();
   }
 
-  return { count, list, insert, getById, updateAfterUse, markRevoked };
+  function updateDeviceName(id: string, deviceName: string): boolean {
+    const result = db
+      .update(webauthnCredentials)
+      .set({ deviceName })
+      .where(eq(webauthnCredentials.id, id))
+      .run();
+    return result.changes > 0;
+  }
+
+  function remove(id: string): boolean {
+    const result = db
+      .delete(webauthnCredentials)
+      .where(eq(webauthnCredentials.id, id))
+      .run();
+    return result.changes > 0;
+  }
+
+  return {
+    count,
+    list,
+    insert,
+    getById,
+    updateAfterUse,
+    markRevoked,
+    updateDeviceName,
+    remove,
+  };
 }
 
 export type CredentialsStore = ReturnType<typeof createCredentialsStore>;
