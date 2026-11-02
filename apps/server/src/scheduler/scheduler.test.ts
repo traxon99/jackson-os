@@ -1,0 +1,103 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRegistry, type SourceAdapter } from '@jos/core';
+import { closeDb, openDb, runMigrations } from '@jos/db';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import { createSnapshotStore } from '../data/snapshots.js';
+import type { DatasetRunner } from './run-dataset.js';
+import { createScheduler } from './scheduler.js';
+
+const everyMs = 1000;
+
+function failingSource(): SourceAdapter {
+  return {
+    id: 'demo',
+    displayName: 'Demo',
+    configSchema: z.object({}),
+    datasets: {
+      main: {
+        schema: z.object({ ok: z.boolean() }),
+        refresh: { everyMs, staleAfterMs: 2000, maxBackoffMs: everyMs * 8 },
+        fetch: async () => {
+          throw new Error('fail');
+        },
+      },
+    },
+  };
+}
+
+describe('createScheduler', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('backs off after failures and resets delay after success', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const dir = mkdtempSync(join(tmpdir(), 'jos-scheduler-'));
+    const conn = openDb(join(dir, 'test.db'));
+    runMigrations(conn.db);
+    const store = createSnapshotStore(conn.db);
+    store.putOk('demo', 'main', { ok: true }, 0, 0);
+
+    const registry = createRegistry();
+    registry.registerSource(failingSource());
+
+    let shouldFail = true;
+    const runner: DatasetRunner = {
+      run: async (source, datasetKey) => {
+        if (shouldFail) {
+          store.putError(source.id, datasetKey, 'fail');
+          return;
+        }
+        store.putOk(
+          source.id,
+          datasetKey,
+          { ok: true },
+          Date.now(),
+          Date.now() + 2000,
+        );
+      },
+    };
+
+    const scheduler = createScheduler({
+      registry,
+      runner,
+      store,
+      enabled: () => true,
+      random: () => 0.5,
+      now: () => Date.now(),
+      getSourceConfig: () => ({}),
+    });
+
+    try {
+      scheduler.start();
+
+      await vi.advanceTimersByTimeAsync(everyMs);
+      expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(
+        everyMs * 2,
+      );
+
+      await vi.advanceTimersByTimeAsync(everyMs * 2);
+      expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(
+        everyMs * 4,
+      );
+
+      await vi.advanceTimersByTimeAsync(everyMs * 4);
+      expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(
+        everyMs * 8,
+      );
+
+      shouldFail = false;
+      await vi.advanceTimersByTimeAsync(everyMs * 8);
+      expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(everyMs);
+    } finally {
+      scheduler.stop();
+      closeDb(conn);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

@@ -1,0 +1,101 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRegistry, type Registry, registerDemo } from '@jos/core';
+import { closeDb, openDb, runMigrations } from '@jos/db';
+import type { Hono } from 'hono';
+import { type CreateAppConfig, createApp } from './app.js';
+import { createSnapshotStore, type SnapshotStore } from './data/snapshots.js';
+import { createRunner, type DatasetRunner } from './scheduler/run-dataset.js';
+import { createScheduler, type Scheduler } from './scheduler/scheduler.js';
+
+const stubLog = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
+
+export type TestStack = {
+  app: Hono;
+  conn: ReturnType<typeof openDb>;
+  dir: string;
+  store: SnapshotStore;
+  runner: DatasetRunner;
+  scheduler: Scheduler;
+  registry: Registry;
+};
+
+export function createTestStack(
+  config: Partial<CreateAppConfig> & {
+    now?: () => number;
+    dbPath?: string;
+  } = {},
+): TestStack {
+  const dir = mkdtempSync(join(tmpdir(), 'jos-stack-'));
+  const dbPath = config.dbPath ?? join(dir, 'app.db');
+  const conn = openDb(dbPath);
+  runMigrations(conn.db);
+
+  const registry = createRegistry();
+  registerDemo(registry);
+
+  const store = createSnapshotStore(conn.db);
+  const now = config.now ?? (() => Date.now());
+
+  const runner = createRunner({
+    store,
+    db: conn.db,
+    log: stubLog,
+    now,
+    fetchImpl: globalThis.fetch,
+  });
+
+  const scheduler = createScheduler({
+    registry,
+    runner,
+    store,
+    enabled: (sourceId) => sourceId === 'demo',
+    random: () => 0.5,
+    now,
+    getSourceConfig: () => ({}),
+  });
+
+  const webDist =
+    config.WEB_DIST ?? mkdtempSync(join(tmpdir(), 'jos-webdist-'));
+  writeFileSync(join(webDist, 'index.html'), '<!doctype html>');
+
+  const app = createApp({
+    ...config,
+    WEB_DIST: webDist,
+    getSession: async () => ({ id: 'test-session' }),
+    stack: {
+      conn,
+      registry,
+      store,
+      runner,
+      scheduler,
+      enabled: (sourceId) => sourceId === 'demo',
+      getSourceConfig: () => ({}),
+      now,
+    },
+  });
+
+  return { app, conn, dir, store, runner, scheduler, registry };
+}
+
+export function destroyTestStack(stack: TestStack): void {
+  stack.scheduler.stop();
+  closeDb(stack.conn);
+  rmSync(stack.dir, { recursive: true, force: true });
+}
+
+export async function tempWebDist(): Promise<string> {
+  const dir = mkdtempSync(join(tmpdir(), 'jos-webdist-'));
+  writeFileSync(join(dir, 'index.html'), '<!doctype html>');
+  return dir;
+}
+
+export const testSessionHeaders = {
+  'X-Forwarded-For': '203.0.113.1',
+  Origin: 'http://127.0.0.1',
+};
