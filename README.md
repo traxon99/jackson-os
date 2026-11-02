@@ -50,7 +50,7 @@ docker compose -f deploy/compose.yaml --profile tunnel up
 
 ## Fly (production)
 
-Fly.io deployment (volume, secrets, `fly.toml`) is documented in [docs/HOSTING.md](docs/HOSTING.md) _(coming in S82)_.
+Fly.io deployment (volume, secrets, `fly.toml`) is documented in [docs/HOSTING.md](docs/HOSTING.md).
 
 ## Environment variables by run mode
 
