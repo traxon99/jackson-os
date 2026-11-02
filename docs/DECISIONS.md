@@ -126,3 +126,138 @@ Ship **one Docker container** that runs the Node server and serves the built SPA
 ### Homelab migration risk
 
 Moderate until Phase 2 is done — Fly volume attach and `fly.toml` must be replaced with Compose volume mounts and tunnel ingress; the container image itself should move unchanged.
+
+## ADR-006 — Auth
+
+### Status
+
+Proposed, awaiting Jackson.
+
+### Context
+
+The app is single-user and runs as a PWA. Authentication must work reliably in the browser (including installed iOS standalone) without adding another always-on identity container or an extra login hop before the app’s own session.
+
+### Decision
+
+Use **self-built passkey authentication** with **SimpleWebAuthn** and **server-side sessions** stored and validated in the Hono server.
+
+### Alternatives rejected
+
+- **Pocket ID / Authelia / Authentik** — Each adds another container and an extra login step in the PWA flow; SSO across homelab apps may be revisited later but is not required for M0.
+
+### Consequences
+
+- WebAuthn ceremony and session cookies are implemented in `apps/server`; no third-party IdP SDK in `packages/core`.
+- Session rotation, logout, and credential management are first-class API concerns.
+- Homelab SSO is a future option without blocking the passkey-first model.
+
+### Homelab migration risk
+
+None for the auth model itself — sessions and credentials live in SQLite; only env secrets and cookie settings must match in Compose.
+
+## ADR-007 — Edge layer
+
+### Status
+
+Pending spike #14.
+
+### Context
+
+Traffic should terminate with modern TLS, basic WAF, and rate limiting without rewriting the app. A second access layer (Cloudflare Access) might add defence in depth but could break PWA install flows or iOS standalone behavior.
+
+### Decision
+
+Put the origin behind the **Cloudflare proxy** for DNS, TLS, WAF, and rate limiting. **Cloudflare Access** is not committed until spike #14 answers PWA/cookie/bypass questions.
+
+### Alternatives rejected
+
+- **No edge proxy** — Loses cheap WAF/rate limits and consistent TLS at the edge; Fly/homelab still need TLS somewhere.
+
+### Consequences
+
+- DNS and Cloudflare dashboard settings are host config in `deploy/`, not application code.
+- If Access is adopted after the spike, it sits in front of passkey auth (defence in depth), not as the only lock.
+- Tunnel + Access for homelab reuses the same Cloudflare account patterns from Phase 2 hosting.
+
+### Homelab migration risk
+
+Low for DNS/TLS/WAF — point tunnel ingress at the same container. Access policy details may differ per phase but stay outside `packages/core`.
+
+## ADR-008 — Portfolio analytics
+
+### Status
+
+Proposed, awaiting Jackson.
+
+### Context
+
+We want lightweight insight into site usage without self-hosting another service or paid SaaS, and without cookie banners that complicate a personal PWA.
+
+### Decision
+
+Use **Cloudflare Web Analytics** (free, cookieless) for the public-facing site, already compatible with Cloudflare proxying, with metrics queried via the **GraphQL Analytics API** where needed for dashboards.
+
+### Alternatives rejected
+
+- **Umami** — Self-hosted; richer events but another service to run and back up.
+- **Plausible** — Paid hosted analytics; unnecessary cost for a single-operator dashboard.
+
+### Consequences
+
+- Analytics integration lives in server/deploy layers or optional jobs, not in `packages/core`.
+- Portfolio views may aggregate Cloudflare metrics rather than embedding third-party scripts in the SPA.
+- Switching providers later is config-heavy but does not require core rewrites.
+
+### Homelab migration risk
+
+Low — analytics is orthogonal to the app container; changing provider affects dashboards and env tokens only.
+
+## ADR-009 — Scheduler
+
+### Context
+
+Background jobs (sync, cleanup, reminders) should run on a predictable cadence without depending on Fly-specific cron or external CI schedules that can drift or miss when the app is down.
+
+### Decision
+
+Run an **in-process scheduler** inside the **server container** (no external cron service).
+
+### Alternatives rejected
+
+- **Fly Machines cron** — Ties scheduling to Fly’s platform; homelab would need a different trigger.
+- **GitHub Actions cron** — Requires repo/network availability and is decoupled from app health and SQLite state.
+
+### Consequences
+
+- Job registration and locking live in `apps/server` alongside the HTTP server.
+- Only one scheduler instance should run per deployment (single container assumption matches ADR-005).
+- Long jobs must respect SQLite single-writer constraints and avoid blocking the event loop.
+
+### Homelab migration risk
+
+None — the same Node process runs scheduled work in Compose; no Fly cron to replace.
+
+## ADR-010 — Lock-in rules
+
+### Context
+
+Foundation packages should remain portable so hosting, auth vendors, and analytics can change without rewriting domain logic.
+
+### Decision
+
+- **No vendor SDKs** in `packages/core`.
+- **All host-specific configuration** (Fly, Cloudflare, tunnel, volumes, analytics tokens) lives in **environment variables** and **`deploy/`**.
+
+### Alternatives rejected
+
+- **Embedding provider clients in core** — Would violate purity and make homelab migration a rewrite instead of a config swap.
+
+### Consequences
+
+- `packages/core` stays testable and free of I/O; integrations sit in `apps/server`, `packages/db`, and deploy manifests.
+- New vendors are adopted by adding adapters at the edges, not by changing shared types.
+- Code review and `purity.test.ts` guardrails reinforce the boundary.
+
+### Homelab migration risk
+
+None — the rules exist specifically to keep migration to homelab a deploy/config exercise.
