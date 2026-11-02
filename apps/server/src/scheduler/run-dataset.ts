@@ -1,5 +1,6 @@
 import type { Logger, SourceAdapter } from '@jos/core';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { writeMetricPoints } from '../data/metrics.js';
 import type { SnapshotStore } from '../data/snapshots.js';
 
 export type DatasetRunner = ReturnType<typeof createRunner>;
