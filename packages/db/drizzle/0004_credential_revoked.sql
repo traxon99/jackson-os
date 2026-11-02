@@ -1,0 +1,1 @@
+ALTER TABLE `webauthn_credentials` ADD `revoked_at` integer;

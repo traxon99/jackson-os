@@ -29,6 +29,13 @@
       "when": 1793646477637,
       "tag": "0003_meta_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793646602743,
+      "tag": "0004_credential_revoked",
+      "breakpoints": true
     }
   ]
 }

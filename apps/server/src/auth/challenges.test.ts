@@ -3,7 +3,7 @@ import { createChallengeStore } from './challenges.js';
 
 describe('createChallengeStore', () => {
   it('returns null on second consume', () => {
-    let current = 0;
+    const current = 0;
     const store = createChallengeStore(() => current);
     const { id } = store.issue('reg');
     expect(store.consume(id, 'reg')).not.toBeNull();

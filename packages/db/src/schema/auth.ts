@@ -8,6 +8,7 @@ export const webauthnCredentials = sqliteTable('webauthn_credentials', {
   deviceName: text('device_name'),
   createdAt: integer('created_at').notNull(),
   lastUsedAt: integer('last_used_at'),
+  revokedAt: integer('revoked_at'),
 });
 
 export const sessions = sqliteTable('sessions', {

@@ -99,7 +99,9 @@ export function createSessionService(
   }
 
   function revoke(token: string): void {
-    db.delete(sessions).where(eq(sessions.idHash, hashToken(token))).run();
+    db.delete(sessions)
+      .where(eq(sessions.idHash, hashToken(token)))
+      .run();
   }
 
   function revokeAll(): void {

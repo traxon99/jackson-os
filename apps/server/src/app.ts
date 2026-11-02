@@ -7,17 +7,15 @@ import type { AppConfig } from './config.js';
 import type { SnapshotStore } from './data/snapshots.js';
 import {
   authGate,
-  createGetSession,
   defaultGetSession,
   type GetSession,
 } from './middleware/auth-gate.js';
-import { readSessionToken } from './auth/cookie.js';
 import { securityHeadersMiddleware } from './middleware/headers.js';
 import { originCheck } from './middleware/origin.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { requestLogMiddleware } from './middleware/request-log.js';
 import { mountAuthSessionRoutes } from './routes/auth-session.js';
-import { mountAuthRoutes, createAuthServices } from './routes/mount-auth.js';
+import { mountAuthRoutes } from './routes/mount-auth.js';
 import { mountDataRoutes } from './routes/mount-data.js';
 import type { DatasetRunner } from './scheduler/run-dataset.js';
 import type { Scheduler } from './scheduler/scheduler.js';
@@ -27,6 +25,12 @@ export type AuthDeps = {
   sessions: SessionService;
   getSession: GetSession;
 };
+
+export type AuthRouteConfig = Pick<
+  AppConfig,
+  'RP_ID' | 'APP_ORIGIN' | 'SETUP_TOKEN'
+> &
+  Partial<Pick<AppConfig, 'TRUST_CLOUDFLARE'>>;
 
 export type AppStack = {
   conn: DbConnection;
@@ -44,6 +48,7 @@ export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
     logger?: Logger;
     getSession?: GetSession;
     auth?: AuthDeps;
+    authConfig?: AuthRouteConfig;
     stack?: AppStack;
   };
 
@@ -72,9 +77,7 @@ export function createApp(config: CreateAppConfig) {
   app.use(originCheck(resolved.APP_ORIGIN));
 
   const getSession =
-    config.getSession ??
-    config.auth?.getSession ??
-    defaultGetSession();
+    config.getSession ?? config.auth?.getSession ?? defaultGetSession();
 
   const api = new Hono();
   api.use(
@@ -85,7 +88,13 @@ export function createApp(config: CreateAppConfig) {
   api.get('/health', (c) => c.json({ ok: true }));
   api.get('/secret', (c) => c.json({ secret: true }));
 
-  if (config.auth !== undefined) {
+  if (
+    config.auth !== undefined &&
+    config.stack !== undefined &&
+    config.authConfig !== undefined
+  ) {
+    mountAuthRoutes(api, config.stack, config.authConfig, config.auth);
+  } else if (config.auth !== undefined) {
     mountAuthSessionRoutes(api, config.auth);
   } else {
     api.all('/auth/*', (c) => c.json({ error: 'Not Found' }, 404));

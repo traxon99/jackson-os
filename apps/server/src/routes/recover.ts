@@ -2,10 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import {
-  readSessionToken,
-  setSessionCookie,
-} from '../auth/cookie.js';
+import { readSessionToken, setSessionCookie } from '../auth/cookie.js';
 import type { RecoveryCodesService } from '../auth/recovery-codes.js';
 import type { SessionService } from '../auth/sessions.js';
 import { insertActionLog } from '../data/action-log.js';
