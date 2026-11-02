@@ -57,7 +57,7 @@ export function App() {
       {path === '/settings/passkeys' ? (
         <PasskeysPage />
       ) : (
-        <main className="app-shell">
+        <main className="app-shell scroll">
           <Dashboard />
         </main>
       )}
