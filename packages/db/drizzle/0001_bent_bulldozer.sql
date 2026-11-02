@@ -11,7 +11,7 @@ CREATE TABLE `metric_points` (
 	`source_id` text NOT NULL,
 	`metric` text NOT NULL,
 	`ts` integer NOT NULL,
-	`value` integer NOT NULL,
+	`value` real NOT NULL,
 	`dims` text
 );
 --> statement-breakpoint
