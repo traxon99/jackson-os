@@ -3,7 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p . --outDir dist --rootDir src"
+  },
   "dependencies": {
     "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }
