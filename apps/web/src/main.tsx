@@ -6,12 +6,16 @@ import { registerServiceWorker } from './pwa/register.js';
 import { applyStandaloneClass } from './pwa/standalone.js';
 import './app.css';
 import './styles/app.css';
+<<<<<<< HEAD
 import './styles/base.css';
 
 applyStandaloneClass();
 if (import.meta.env.PROD) {
   void registerServiceWorker();
 }
+=======
+import { attachVisibilityFocusListener } from './pwa/focus-manager.js';
+>>>>>>> c5dafed (S76: refetch on resume via visibilitychange (#91))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +25,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+attachVisibilityFocusListener();
 
 const root = document.getElementById('root');
 if (root) {

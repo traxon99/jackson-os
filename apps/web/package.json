@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
     "build": "vite build",
     "e2e": "vite build && playwright test",
-    "generate-pwa-icons": "node scripts/generate-pwa-icons.mjs"
+    "generate-pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "generate-splash": "node scripts/gen-splash.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@jos/core": "workspace:*",
