@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p . --outDir dist --rootDir src"
+    "build": "tsc -p . --outDir dist --rootDir src",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "better-sqlite3": "^11.9.1",
@@ -14,6 +15,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.14.0",
+    "drizzle-kit": "^0.30.4",
     "typescript": "^5.8.3"
   }
 }
