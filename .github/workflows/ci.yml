@@ -36,3 +36,21 @@ jobs:
 
       - name: No secret names in web bundle
         run: pnpm check-no-secrets-in-web
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t jos .
+
+      - name: Assert image size under 250 MB
+        run: |
+          SIZE="$(docker image inspect -f '{{.Size}}' jos)"
+          echo "Image size bytes: ${SIZE}"
+          LIMIT=$((250 * 1024 * 1024))
+          if [ "${SIZE}" -ge "${LIMIT}" ]; then
+            echo "Image size ${SIZE} bytes is >= ${LIMIT} bytes (250 MiB)" >&2
+            exit 1
+          fi
