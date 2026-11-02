@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppConfig } from './config.js';
 import { securityHeadersMiddleware } from './middleware/headers.js';
 import { originCheck } from './middleware/origin.js';
+import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { mountStatic } from './static.js';
 
 export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
@@ -24,7 +25,12 @@ export function createApp(config: CreateAppConfig) {
   app.use(originCheck(resolved.APP_ORIGIN));
 
   const api = new Hono();
+  api.use(
+    '*',
+    rateLimitMiddleware({ trustCloudflare: resolved.TRUST_CLOUDFLARE }),
+  );
   api.get('/health', (c) => c.json({ ok: true }));
+  api.all('/auth/*', (c) => c.json({ error: 'Not Found' }, 404));
   api.all('*', (c) => c.json({ error: 'Not Found' }, 404));
   app.route('/api', api);
 
