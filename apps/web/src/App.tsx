@@ -1,39 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RecoverPage } from './auth/RecoverPage.js';
 import { RecoveryCodesView } from './auth/RecoveryCodesView.js';
 import { SetupPage } from './auth/SetupPage.js';
 import { SignInPage } from './auth/SignInPage.js';
 import { useAuth } from './auth/useAuth.js';
+import { Dashboard } from './dashboard/Dashboard.js';
 import { PasskeysPage } from './settings/PasskeysPage.js';
 
 function pathName(): string {
   return window.location.pathname;
-}
-
-function HomePage() {
-  const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('health check failed');
-        }
-        return res.json() as Promise<{ ok?: boolean }>;
-      })
-      .then((data) => {
-        setMessage(data.ok ? 'Server OK' : 'Server down');
-      })
-      .catch(() => {
-        setMessage('Server down');
-      });
-  }, []);
-
-  return (
-    <main className="home-page">
-      <p>{message ?? '…'}</p>
-    </main>
-  );
 }
 
 export function App() {
@@ -79,7 +54,13 @@ export function App() {
         <a href="/">Home</a>
         <a href="/settings/passkeys">Passkeys</a>
       </nav>
-      {path === '/settings/passkeys' ? <PasskeysPage /> : <HomePage />}
+      {path === '/settings/passkeys' ? (
+        <PasskeysPage />
+      ) : (
+        <main className="app-shell">
+          <Dashboard />
+        </main>
+      )}
     </>
   );
 }
