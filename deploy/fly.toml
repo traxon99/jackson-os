@@ -1,0 +1,33 @@
+# fly.toml app config — see https://fly.io/docs/reference/configuration/
+
+app = "jackson-os"
+primary_region = "ewr" # ⚑ confirm — pick the region nearest Jackson
+
+[build]
+  dockerfile = "../Dockerfile"
+
+[env]
+  DATA_DIR = "/data"
+  TRUST_CLOUDFLARE = "true"
+  APP_ORIGIN = "https://os.jacksonyanek.com"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "2s"
+
+[[mounts]]
+  source = "jos_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
+import { attachVisibilityFocusListener } from './pwa/focus-manager.js';
 import { registerServiceWorker } from './pwa/register.js';
 import { applyStandaloneClass } from './pwa/standalone.js';
 import './app.css';
@@ -21,6 +22,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+attachVisibilityFocusListener();
 
 const root = document.getElementById('root');
 if (root) {
