@@ -6,13 +6,16 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "vite build"
+    "build": "vite build",
+    "e2e": "vite build && playwright test"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.7.0",
