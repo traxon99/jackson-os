@@ -1,4 +1,5 @@
 export {
+  meta,
   recoveryCodes,
   sessions,
   webauthnCredentials,
