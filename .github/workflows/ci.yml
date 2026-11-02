@@ -33,3 +33,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: No secret names in web bundle
+        run: pnpm check-no-secrets-in-web
