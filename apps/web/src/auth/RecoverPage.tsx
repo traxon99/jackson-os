@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { apiPost } from '../lib/api.js';
+import { RecoveryCodesView } from './RecoveryCodesView.js';
 import { invalidateAuth } from './useAuth.js';
 import { registerPasskey } from './webauthn.js';
-import { RecoveryCodesView } from './RecoveryCodesView.js';
 
 export function RecoverPage() {
   const queryClient = useQueryClient();
@@ -60,7 +60,10 @@ export function RecoverPage() {
     return (
       <main className="auth-page">
         <h1>Create a new passkey</h1>
-        <p>Your recovery code was accepted. Register a passkey to finish recovery.</p>
+        <p>
+          Your recovery code was accepted. Register a passkey to finish
+          recovery.
+        </p>
         <button type="button" disabled={busy} onClick={onCreatePasskey}>
           Create passkey
         </button>
@@ -82,7 +85,11 @@ export function RecoverPage() {
           style={{ fontSize: '16px' }}
         />
       </label>
-      <button type="button" disabled={busy || code.trim().length === 0} onClick={onSubmitCode}>
+      <button
+        type="button"
+        disabled={busy || code.trim().length === 0}
+        onClick={onSubmitCode}
+      >
         Continue
       </button>
       {error !== null ? <p className="error">{error}</p> : null}

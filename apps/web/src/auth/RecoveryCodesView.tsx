@@ -5,7 +5,10 @@ type RecoveryCodesViewProps = {
   onConfirm: () => void;
 };
 
-export function RecoveryCodesView({ codes, onConfirm }: RecoveryCodesViewProps) {
+export function RecoveryCodesView({
+  codes,
+  onConfirm,
+}: RecoveryCodesViewProps) {
   const [copied, setCopied] = useState(false);
   const text = codes.join('\n');
 

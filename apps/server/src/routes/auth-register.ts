@@ -128,6 +128,7 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
       })),
       challenge: issued.challenge,
     });
+    deps.challenges.alignChallenge(issued.id, options.challenge);
 
     return c.json(options);
   });

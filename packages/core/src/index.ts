@@ -20,7 +20,3 @@ export {
   registerDemo,
 } from './demo/index.js';
 export { createRegistry, type Registry } from './registry.js';
-export {
-  type RunAdapterContractOptions,
-  runAdapterContract,
-} from './testing/contract.js';

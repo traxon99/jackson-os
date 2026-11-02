@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.js';
+import { RecoveryCodesView } from '../auth/RecoveryCodesView.js';
 import { invalidateAuth } from '../auth/useAuth.js';
 import { registerPasskey } from '../auth/webauthn.js';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api.js';
 
 type PasskeyRow = {
   id: string;
@@ -23,6 +24,9 @@ export function PasskeysPage() {
   const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [regeneratedCodes, setRegeneratedCodes] = useState<string[] | null>(
+    null,
+  );
 
   const rows = passkeys.data ?? [];
   const canRevoke = rows.length > 1;
@@ -92,6 +96,30 @@ export function PasskeysPage() {
     },
   });
 
+  async function onRegenerateCodes() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiPost<{ recoveryCodes: string[] }>(
+        '/api/recovery-codes/regenerate',
+      );
+      setRegeneratedCodes(result.recoveryCodes);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Regenerate failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (regeneratedCodes !== null) {
+    return (
+      <RecoveryCodesView
+        codes={regeneratedCodes}
+        onConfirm={() => setRegeneratedCodes(null)}
+      />
+    );
+  }
+
   if (passkeys.isLoading) {
     return <p className="settings-page">Loading passkeys…</p>;
   }
@@ -109,10 +137,18 @@ export function PasskeysPage() {
                   onChange={(event) => setRenameValue(event.target.value)}
                   aria-label="Device name"
                 />
-                <button type="button" disabled={busy} onClick={() => onSaveRename(row.id)}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onSaveRename(row.id)}
+                >
                   Save
                 </button>
-                <button type="button" disabled={busy} onClick={() => setRenameId(null)}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setRenameId(null)}
+                >
                   Cancel
                 </button>
               </>
@@ -132,10 +168,18 @@ export function PasskeysPage() {
                 {confirmRevokeId === row.id ? (
                   <>
                     <span>Revoke this passkey?</span>
-                    <button type="button" disabled={busy || !canRevoke} onClick={() => onRevoke(row.id)}>
+                    <button
+                      type="button"
+                      disabled={busy || !canRevoke}
+                      onClick={() => onRevoke(row.id)}
+                    >
                       Confirm revoke
                     </button>
-                    <button type="button" disabled={busy} onClick={() => setConfirmRevokeId(null)}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirmRevokeId(null)}
+                    >
                       Cancel
                     </button>
                   </>
@@ -158,11 +202,23 @@ export function PasskeysPage() {
         Add another passkey
       </button>
 
+      <button type="button" disabled={busy} onClick={onRegenerateCodes}>
+        Regenerate recovery codes
+      </button>
+
       <div className="recovery-actions">
-        <button type="button" disabled={signOut.isPending} onClick={() => signOut.mutate()}>
+        <button
+          type="button"
+          disabled={signOut.isPending}
+          onClick={() => signOut.mutate()}
+        >
           Sign out
         </button>
-        <button type="button" disabled={signOutAll.isPending} onClick={() => signOutAll.mutate()}>
+        <button
+          type="button"
+          disabled={signOutAll.isPending}
+          onClick={() => signOutAll.mutate()}
+        >
           Sign out everywhere
         </button>
       </div>

@@ -1,8 +1,8 @@
 import {
-  startAuthentication,
-  startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
   type PublicKeyCredentialRequestOptionsJSON,
+  startAuthentication,
+  startRegistration,
 } from '@simplewebauthn/browser';
 import { apiPost } from '../lib/api.js';
 

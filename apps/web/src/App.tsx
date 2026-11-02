@@ -62,7 +62,9 @@ export function App() {
   if (auth.data?.signedIn !== true) {
     if (path === '/setup') {
       return (
-        <SetupPage onRecoveryCodes={(codes) => setPendingRecoveryCodes(codes)} />
+        <SetupPage
+          onRecoveryCodes={(codes) => setPendingRecoveryCodes(codes)}
+        />
       );
     }
     if (path === '/recover') {

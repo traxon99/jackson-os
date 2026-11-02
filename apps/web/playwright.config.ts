@@ -22,7 +22,7 @@ function systemChromiumPath(): string | undefined {
 const chromiumExecutable = systemChromiumPath();
 const e2eDataDir = mkdtempSync(join(tmpdir(), 'jos-e2e-'));
 const setupToken = '01234567890123456789012345678901';
-const appOrigin = 'http://127.0.0.1:8080';
+const appOrigin = 'http://localhost:8080';
 
 export default defineConfig({
   testDir: './e2e',
@@ -45,6 +45,6 @@ export default defineConfig({
       'pnpm --filter server exec tsx src/index.ts',
     ].join(' '),
     port: 8080,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 });

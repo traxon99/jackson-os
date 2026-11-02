@@ -41,6 +41,7 @@ export function createAuthLoginRoutes(deps: AuthLoginDeps): Hono {
       allowCredentials: [],
       challenge: issued.challenge,
     });
+    deps.challenges.alignChallenge(issued.id, options.challenge);
 
     return c.json(options);
   });

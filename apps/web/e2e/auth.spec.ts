@@ -16,7 +16,9 @@ async function addVirtualAuthenticator(page: import('@playwright/test').Page) {
   });
 }
 
-test('register with setup token then sign in with passkey', async ({ page }) => {
+test('register with setup token then sign in with passkey', async ({
+  page,
+}) => {
   await addVirtualAuthenticator(page);
 
   await page.goto('/setup');
@@ -25,9 +27,7 @@ test('register with setup token then sign in with passkey', async ({ page }) => 
   await page.getByRole('button', { name: 'I saved these' }).click();
   await expect(page.getByText('Server OK')).toBeVisible({ timeout: 15_000 });
 
-  await page.evaluate(() => {
-    document.cookie = 'session=; Max-Age=0; path=/';
-  });
+  await page.context().clearCookies();
   await page.goto('/');
 
   await page.getByRole('button', { name: 'Sign in with passkey' }).click();

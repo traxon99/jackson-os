@@ -43,7 +43,11 @@ export function SetupPage({ onRecoveryCodes }: SetupPageProps) {
           style={{ fontSize: '16px' }}
         />
       </label>
-      <button type="button" disabled={busy || setupToken.length === 0} onClick={onCreatePasskey}>
+      <button
+        type="button"
+        disabled={busy || setupToken.length === 0}
+        onClick={onCreatePasskey}
+      >
         Create passkey
       </button>
       {error !== null ? <p className="error">{error}</p> : null}
