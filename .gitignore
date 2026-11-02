@@ -5,3 +5,5 @@ dist
 *.db-*
 /data
 coverage
+deploy/secrets/*
+!deploy/secrets/.gitkeep
