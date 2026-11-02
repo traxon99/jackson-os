@@ -22,6 +22,7 @@ test('register with setup token then sign in with passkey', async ({ page }) => 
   await page.goto('/setup');
   await page.getByLabel('Setup token').fill(setupToken);
   await page.getByRole('button', { name: 'Create passkey' }).click();
+  await page.getByRole('button', { name: 'I saved these' }).click();
   await expect(page.getByText('Server OK')).toBeVisible({ timeout: 15_000 });
 
   await page.evaluate(() => {
