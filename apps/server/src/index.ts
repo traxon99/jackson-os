@@ -1,4 +1,6 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
+import { openDb, runMigrations } from '@jos/db';
 import { createApp } from './app.js';
 import {
   type AppConfig,
@@ -25,6 +27,10 @@ try {
 logDisabledSources(config, (message) => {
   logger.info(message);
 });
+
+const dbPath = join(config.DATA_DIR, 'app.db');
+const dbConn = openDb(dbPath);
+runMigrations(dbConn.db);
 
 const app = createApp();
 
