@@ -1,13 +1,17 @@
 import { Hono } from 'hono';
+import type { Logger } from 'pino';
 import type { AppConfig } from './config.js';
 import { authGate, defaultGetSession } from './middleware/auth-gate.js';
 import { securityHeadersMiddleware } from './middleware/headers.js';
 import { originCheck } from './middleware/origin.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
+import { requestLogMiddleware } from './middleware/request-log.js';
 import { mountStatic } from './static.js';
 
 export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
-  Partial<Pick<AppConfig, 'APP_ORIGIN' | 'TRUST_CLOUDFLARE'>>;
+  Partial<Pick<AppConfig, 'APP_ORIGIN' | 'TRUST_CLOUDFLARE'>> & {
+    logger?: Logger;
+  };
 
 function resolveCreateAppConfig(
   config: CreateAppConfig,
@@ -22,6 +26,14 @@ function resolveCreateAppConfig(
 export function createApp(config: CreateAppConfig) {
   const resolved = resolveCreateAppConfig(config);
   const app = new Hono();
+  if (config.logger !== undefined) {
+    app.use(
+      requestLogMiddleware({
+        logger: config.logger,
+        trustCloudflare: resolved.TRUST_CLOUDFLARE,
+      }),
+    );
+  }
   app.use(securityHeadersMiddleware());
   app.use(originCheck(resolved.APP_ORIGIN));
 
