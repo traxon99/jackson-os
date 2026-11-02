@@ -9,6 +9,10 @@ async function createTempDist(): Promise<string> {
   await writeFile(join(dir, 'index.html'), '<!doctype html><title>app</title>');
   await mkdir(join(dir, 'assets'), { recursive: true });
   await writeFile(join(dir, 'assets', 'x.js'), 'console.log("x")');
+  await writeFile(
+    join(dir, 'sw.js'),
+    'self.addEventListener("install", () => {})',
+  );
   return dir;
 }
 
@@ -48,5 +52,17 @@ describe('static file serving', () => {
     const response = await app.request('/assets/x.js');
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toBe('console.log("x")');
+  });
+
+  it('sets Cache-Control no-cache on index.html and sw.js', async () => {
+    webDist = await createTempDist();
+    const app = createApp({ WEB_DIST: webDist });
+
+    const indexResponse = await app.request('/');
+    expect(indexResponse.headers.get('cache-control')).toBe('no-cache');
+
+    const swResponse = await app.request('/sw.js');
+    expect(swResponse.status).toBe(200);
+    expect(swResponse.headers.get('cache-control')).toBe('no-cache');
   });
 });
