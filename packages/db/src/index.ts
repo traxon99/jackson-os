@@ -3,6 +3,7 @@ export { runMigrations } from './migrate.js';
 export { closeDb, type DbConnection, openDb } from './open.js';
 export {
   actionLog,
+  meta,
   metricPoints,
   recoveryCodes,
   sessions,

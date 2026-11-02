@@ -8,6 +8,7 @@ export const webauthnCredentials = sqliteTable('webauthn_credentials', {
   deviceName: text('device_name'),
   createdAt: integer('created_at').notNull(),
   lastUsedAt: integer('last_used_at'),
+  revokedAt: integer('revoked_at'),
 });
 
 export const sessions = sqliteTable('sessions', {
@@ -16,6 +17,14 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: integer('expires_at').notNull(),
   lastSeenAt: integer('last_seen_at').notNull(),
   userAgent: text('user_agent'),
+  scope: text('scope', { enum: ['full', 'recovery'] })
+    .notNull()
+    .default('full'),
+});
+
+export const meta = sqliteTable('meta', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
 });
 
 export const recoveryCodes = sqliteTable('recovery_codes', {

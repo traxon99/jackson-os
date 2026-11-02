@@ -15,6 +15,7 @@ import {
 import { createSnapshotStore } from './data/snapshots.js';
 import { createLifecycle } from './lifecycle.js';
 import { createLogger } from './log.js';
+import { createAuthServices } from './routes/mount-auth.js';
 import { createRunner } from './scheduler/run-dataset.js';
 import { createScheduler } from './scheduler/scheduler.js';
 
@@ -90,19 +91,30 @@ const scheduler = createScheduler({
 
 scheduler.start();
 
+const stack = {
+  conn: dbConn,
+  registry,
+  store,
+  runner,
+  scheduler,
+  enabled: isSourceEnabled,
+  getSourceConfig,
+  now,
+};
+
+const auth = createAuthServices(stack);
+
 const app = createApp({
   ...config,
   logger,
-  stack: {
-    conn: dbConn,
-    registry,
-    store,
-    runner,
-    scheduler,
-    enabled: isSourceEnabled,
-    getSourceConfig,
-    now,
+  auth,
+  authConfig: {
+    RP_ID: config.RP_ID,
+    APP_ORIGIN: config.APP_ORIGIN,
+    SETUP_TOKEN: config.SETUP_TOKEN,
+    TRUST_CLOUDFLARE: config.TRUST_CLOUDFLARE,
   },
+  stack,
 });
 
 const server = serve({

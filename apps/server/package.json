@@ -13,12 +13,15 @@
     "@hono/node-server": "^1.14.1",
     "@jos/core": "workspace:*",
     "@jos/db": "workspace:*",
+    "@node-rs/argon2": "^2.2.2",
+    "@simplewebauthn/server": "^14.0.3",
     "drizzle-orm": "^0.41.0",
     "hono": "^4.7.6",
     "pino": "^10.4.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@simplewebauthn/types": "^12.0.0",
     "@types/node": "^22.14.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"

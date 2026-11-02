@@ -12,6 +12,8 @@ RUN pnpm build
 RUN pnpm deploy --filter server --prod /out
 RUN mkdir -p /out/web && cp -r apps/web/dist /out/web/dist
 RUN cp -r packages/db/drizzle /out/node_modules/@jos/db/drizzle
+RUN find /out/node_modules -type f \( -name '*.md' -o -name '*.markdown' -o -name 'LICENSE*' -o -name 'CHANGELOG*' -o -name '*.map' \) -delete \
+  && find /out/node_modules -type d \( -name test -o -name tests -o -name __tests__ -o -name docs \) -prune -exec rm -rf {} +
 
 FROM node:22-slim AS runtime
 ENV DATA_DIR=/data \
