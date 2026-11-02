@@ -28,11 +28,15 @@ export function createSessionService(
   function create(input: {
     userAgent?: string;
     scope?: SessionScope;
+    absoluteTtlMs?: number;
   }): string {
     const token = randomBytes(32).toString('base64url');
     const idHash = hashToken(token);
     const createdAt = now();
-    const expiresAt = createdAt + THIRTY_DAYS_MS;
+    const expiresAt =
+      input.absoluteTtlMs !== undefined
+        ? createdAt + input.absoluteTtlMs
+        : createdAt + THIRTY_DAYS_MS;
 
     db.insert(sessions)
       .values({
@@ -63,6 +67,17 @@ export function createSessionService(
     const current = now();
     if (row.expiresAt < current) {
       return null;
+    }
+
+    if (row.scope === 'recovery') {
+      return {
+        id: row.idHash,
+        scope: row.scope,
+        createdAt: row.createdAt,
+        expiresAt: row.expiresAt,
+        lastSeenAt: row.lastSeenAt,
+        userAgent: row.userAgent,
+      };
     }
 
     const maxExpires = row.createdAt + NINETY_DAYS_MS;

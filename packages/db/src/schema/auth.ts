@@ -21,6 +21,11 @@ export const sessions = sqliteTable('sessions', {
     .default('full'),
 });
 
+export const meta = sqliteTable('meta', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
 export const recoveryCodes = sqliteTable('recovery_codes', {
   id: text('id').primaryKey(),
   codeHash: text('code_hash').notNull(),
