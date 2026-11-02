@@ -32,7 +32,7 @@ const dbPath = join(config.DATA_DIR, 'app.db');
 const dbConn = openDb(dbPath);
 runMigrations(dbConn.db);
 
-const app = createApp();
+const app = createApp(config);
 
 serve({
   fetch: app.fetch,

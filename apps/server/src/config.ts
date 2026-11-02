@@ -1,5 +1,18 @@
 import { readFileSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+
+function serverPackageRoot(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), '..');
+}
+
+export function resolveWebDist(raw: string): string {
+  if (isAbsolute(raw)) {
+    return raw;
+  }
+  return resolve(serverPackageRoot(), raw);
+}
 
 const configSchema = z.object({
   NODE_ENV: z
@@ -7,6 +20,7 @@ const configSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().default(8080),
   APP_ORIGIN: z.string().url(),
+  WEB_DIST: z.string().default('../web/dist'),
   DATA_DIR: z.string().default('/data'),
   RP_ID: z.string().default('os.jacksonyanek.com'),
   SETUP_TOKEN: z.string().min(32).optional(),
@@ -139,6 +153,7 @@ export function loadConfig(
     NODE_ENV: resolvedEnv.NODE_ENV,
     PORT: resolvedEnv.PORT,
     APP_ORIGIN: resolvedEnv.APP_ORIGIN,
+    WEB_DIST: resolvedEnv.WEB_DIST,
     DATA_DIR: resolvedEnv.DATA_DIR,
     RP_ID: resolvedEnv.RP_ID,
     SETUP_TOKEN: resolvedEnv.SETUP_TOKEN,
@@ -153,5 +168,8 @@ export function loadConfig(
     throw new ConfigError(formatConfigErrors(result.error));
   }
 
-  return result.data;
+  return {
+    ...result.data,
+    WEB_DIST: resolveWebDist(result.data.WEB_DIST),
+  };
 }
