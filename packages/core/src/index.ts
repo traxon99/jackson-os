@@ -13,3 +13,4 @@ export type {
   WidgetDef,
   WidgetPayload,
 } from './contracts.js';
+export { createRegistry, type Registry } from './registry.js';
