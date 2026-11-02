@@ -24,7 +24,7 @@ describe('origin check middleware', () => {
       headers: { Origin: APP_ORIGIN },
     });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(401);
   });
 
   it('returns 403 for cross-origin POST', async () => {

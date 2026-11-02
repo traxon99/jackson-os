@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { AppConfig } from './config.js';
+import { authGate, defaultGetSession } from './middleware/auth-gate.js';
 import { securityHeadersMiddleware } from './middleware/headers.js';
 import { originCheck } from './middleware/origin.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
@@ -29,7 +30,9 @@ export function createApp(config: CreateAppConfig) {
     '*',
     rateLimitMiddleware({ trustCloudflare: resolved.TRUST_CLOUDFLARE }),
   );
+  api.use('*', authGate(defaultGetSession()));
   api.get('/health', (c) => c.json({ ok: true }));
+  api.get('/secret', (c) => c.json({ secret: true }));
   api.all('/auth/*', (c) => c.json({ error: 'Not Found' }, 404));
   api.all('*', (c) => c.json({ error: 'Not Found' }, 404));
   app.route('/api', api);
