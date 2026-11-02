@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
+    "@jos/core": "workspace:*",
     "@jos/db": "workspace:*",
+    "drizzle-orm": "^0.41.0",
     "hono": "^4.7.6",
     "pino": "^10.4.0",
     "zod": "^3.24.2"

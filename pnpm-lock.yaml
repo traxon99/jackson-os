@@ -20,9 +20,15 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.1
         version: 1.19.18(hono@4.13.16)
+      '@jos/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@jos/db':
         specifier: workspace:*
         version: link:../../packages/db
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(gel@2.2.1)
       hono:
         specifier: ^4.7.6
         version: 4.13.16
