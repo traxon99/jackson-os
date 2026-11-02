@@ -10,11 +10,58 @@ const configSchema = z.object({
   DATA_DIR: z.string().default('/data'),
   RP_ID: z.string().default('os.jacksonyanek.com'),
   SETUP_TOKEN: z.string().min(32).optional(),
+  JIM_PAT: z.string().optional(),
+  GITHUB_TOKEN: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  CLOUDFLARE_ZONE_ID: z.string().optional(),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
 
-export const SECRET_KEYS = ['SETUP_TOKEN'] as const;
+export const SECRET_KEYS = [
+  'SETUP_TOKEN',
+  'JIM_PAT',
+  'GITHUB_TOKEN',
+  'CLOUDFLARE_API_TOKEN',
+  'CLOUDFLARE_ZONE_ID',
+] as const;
+
+export type SourceName = 'jim' | 'github' | 'portfolio';
+export type SourceStatusValue = 'enabled' | 'disabled';
+export type SourceStatus = Record<SourceName, SourceStatusValue>;
+
+export function sourceStatus(config: AppConfig): SourceStatus {
+  const has = (value: string | undefined) =>
+    value !== undefined && value !== '';
+
+  return {
+    jim: has(config.JIM_PAT) ? 'enabled' : 'disabled',
+    github: has(config.GITHUB_TOKEN) ? 'enabled' : 'disabled',
+    portfolio:
+      has(config.CLOUDFLARE_API_TOKEN) && has(config.CLOUDFLARE_ZONE_ID)
+        ? 'enabled'
+        : 'disabled',
+  };
+}
+
+export function logDisabledSources(
+  config: AppConfig,
+  log: (message: string) => void,
+): void {
+  const status = sourceStatus(config);
+  for (const [source, state] of Object.entries(status) as [
+    SourceName,
+    SourceStatusValue,
+  ][]) {
+    if (state === 'disabled') {
+      log(`${source} source disabled`);
+    }
+  }
+}
+
+export const CONFIG_ENV_KEYS = Object.keys(
+  configSchema.shape,
+) as (keyof AppConfig)[];
 
 export type ReadFileFn = (path: string) => string;
 
@@ -95,6 +142,10 @@ export function loadConfig(
     DATA_DIR: resolvedEnv.DATA_DIR,
     RP_ID: resolvedEnv.RP_ID,
     SETUP_TOKEN: resolvedEnv.SETUP_TOKEN,
+    JIM_PAT: resolvedEnv.JIM_PAT,
+    GITHUB_TOKEN: resolvedEnv.GITHUB_TOKEN,
+    CLOUDFLARE_API_TOKEN: resolvedEnv.CLOUDFLARE_API_TOKEN,
+    CLOUDFLARE_ZONE_ID: resolvedEnv.CLOUDFLARE_ZONE_ID,
   };
 
   const result = configSchema.safeParse(input);
