@@ -90,7 +90,20 @@ const scheduler = createScheduler({
 
 scheduler.start();
 
-const app = createApp({ ...config, logger });
+const app = createApp({
+  ...config,
+  logger,
+  stack: {
+    conn: dbConn,
+    registry,
+    store,
+    runner,
+    scheduler,
+    enabled: isSourceEnabled,
+    getSourceConfig,
+    now,
+  },
+});
 
 const server = serve({
   fetch: app.fetch,
