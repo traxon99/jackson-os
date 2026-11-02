@@ -46,7 +46,7 @@ export function sourceStatus(config: AppConfig): SourceStatus {
 
 export function logDisabledSources(
   config: AppConfig,
-  log: (message: string) => void = console.info,
+  log: (message: string) => void,
 ): void {
   const status = sourceStatus(config);
   for (const [source, state] of Object.entries(status) as [
