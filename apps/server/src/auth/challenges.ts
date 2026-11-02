@@ -39,7 +39,14 @@ export function createChallengeStore(now: () => number) {
     return entry.challenge;
   }
 
-  return { issue, consume };
+  function alignChallenge(id: string, challenge: string): void {
+    const entry = store.get(id);
+    if (entry !== undefined) {
+      entry.challenge = challenge;
+    }
+  }
+
+  return { issue, consume, alignChallenge };
 }
 
 export type ChallengeStore = ReturnType<typeof createChallengeStore>;

@@ -12,6 +12,7 @@ import { createAuthRegisterRoutes } from './auth-register.js';
 import { mountAuthSessionRoutes } from './auth-session.js';
 import { mountPasskeyRoutes } from './passkeys.js';
 import { createRecoverRoutes } from './recover.js';
+import { mountRecoveryCodesRoutes } from './recovery-codes.js';
 
 export type AuthServices = { sessions: SessionService; getSession: GetSession };
 
@@ -78,4 +79,8 @@ export function mountAuthRoutes(
     }),
   );
   mountPasskeyRoutes(api, credentials);
+  mountRecoveryCodesRoutes(api, {
+    recoveryCodes,
+    getSession: auth.getSession,
+  });
 }
