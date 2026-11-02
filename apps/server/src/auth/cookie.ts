@@ -1,4 +1,5 @@
-import { deleteCookie, getCookie, setCookie, type Context } from 'hono/cookie';
+import type { Context } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const CHALLENGE_MAX_AGE = 5 * 60;

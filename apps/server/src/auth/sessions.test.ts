@@ -8,11 +8,13 @@ import { createSessionService } from './sessions.js';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
-function withDb(run: (ctx: {
-  db: ReturnType<typeof openDb>['db'];
-  service: ReturnType<typeof createSessionService>;
-  setNow: (t: number) => void;
-}) => void): void {
+function withDb(
+  run: (ctx: {
+    db: ReturnType<typeof openDb>['db'];
+    service: ReturnType<typeof createSessionService>;
+    setNow: (t: number) => void;
+  }) => void,
+): void {
   const dir = mkdtempSync(join(tmpdir(), 'jos-sessions-'));
   const conn = openDb(join(dir, 'test.db'));
   runMigrations(conn.db);

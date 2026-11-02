@@ -3,8 +3,6 @@ import { serve } from '@hono/node-server';
 import { createRegistry, registerDemo } from '@jos/core';
 import { closeDb, openDb, runMigrations } from '@jos/db';
 import { createApp } from './app.js';
-import { createSessionService } from './auth/sessions.js';
-import { readSessionToken } from './auth/cookie.js';
 import {
   type AppConfig,
   ConfigError,
@@ -17,10 +15,9 @@ import {
 import { createSnapshotStore } from './data/snapshots.js';
 import { createLifecycle } from './lifecycle.js';
 import { createLogger } from './log.js';
+import { createAuthServices } from './routes/mount-auth.js';
 import { createRunner } from './scheduler/run-dataset.js';
 import { createScheduler } from './scheduler/scheduler.js';
-
-import { createGetSession } from './middleware/auth-gate.js';
 
 const logger = createLogger({ secrets: SECRET_KEYS });
 
@@ -94,26 +91,30 @@ const scheduler = createScheduler({
 
 scheduler.start();
 
-const sessions = createSessionService(dbConn.db, now);
-const getSession = createGetSession(
-  (token) => sessions.lookup(token),
-  readSessionToken,
-);
+const stack = {
+  conn: dbConn,
+  registry,
+  store,
+  runner,
+  scheduler,
+  enabled: isSourceEnabled,
+  getSourceConfig,
+  now,
+};
+
+const auth = createAuthServices(stack);
 
 const app = createApp({
   ...config,
   logger,
-  auth: { sessions, getSession },
-  stack: {
-    conn: dbConn,
-    registry,
-    store,
-    runner,
-    scheduler,
-    enabled: isSourceEnabled,
-    getSourceConfig,
-    now,
+  auth,
+  authConfig: {
+    RP_ID: config.RP_ID,
+    APP_ORIGIN: config.APP_ORIGIN,
+    SETUP_TOKEN: config.SETUP_TOKEN,
+    TRUST_CLOUDFLARE: config.TRUST_CLOUDFLARE,
   },
+  stack,
 });
 
 const server = serve({

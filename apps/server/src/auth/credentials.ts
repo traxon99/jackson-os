@@ -10,6 +10,7 @@ export type StoredCredential = {
   deviceName: string | null;
   createdAt: number;
   lastUsedAt: number | null;
+  revokedAt: number | null;
 };
 
 export function createCredentialsStore(db: BetterSQLite3Database) {
@@ -21,8 +22,14 @@ export function createCredentialsStore(db: BetterSQLite3Database) {
     return db.select().from(webauthnCredentials).all();
   }
 
-  function insert(credential: StoredCredential): void {
-    db.insert(webauthnCredentials).values(credential).run();
+  function insert(
+    credential: Omit<StoredCredential, 'revokedAt'> & {
+      revokedAt?: number | null;
+    },
+  ): void {
+    db.insert(webauthnCredentials)
+      .values({ ...credential, revokedAt: credential.revokedAt ?? null })
+      .run();
   }
 
   function getById(id: string): StoredCredential | undefined {
@@ -33,7 +40,25 @@ export function createCredentialsStore(db: BetterSQLite3Database) {
       .get();
   }
 
-  return { count, list, insert, getById };
+  function updateAfterUse(
+    id: string,
+    counter: number,
+    lastUsedAt: number,
+  ): void {
+    db.update(webauthnCredentials)
+      .set({ counter, lastUsedAt })
+      .where(eq(webauthnCredentials.id, id))
+      .run();
+  }
+
+  function markRevoked(id: string, revokedAt: number): void {
+    db.update(webauthnCredentials)
+      .set({ revokedAt })
+      .where(eq(webauthnCredentials.id, id))
+      .run();
+  }
+
+  return { count, list, insert, getById, updateAfterUse, markRevoked };
 }
 
 export type CredentialsStore = ReturnType<typeof createCredentialsStore>;

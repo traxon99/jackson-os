@@ -9,6 +9,7 @@ const APP_TABLES = [
   'webauthn_credentials',
   'sessions',
   'recovery_codes',
+  'meta',
   'source_snapshots',
   'metric_points',
   'widget_layout',

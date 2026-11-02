@@ -1,9 +1,9 @@
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
+import { meta } from '@jos/db';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
-import { meta } from '@jos/db';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
@@ -32,18 +32,13 @@ function tokensEqual(a: string, b: string): boolean {
 
 function setupTokenUsed(db: BetterSQLite3Database): boolean {
   return (
-    db
-      .select()
-      .from(meta)
-      .where(eq(meta.key, SETUP_TOKEN_USED_KEY))
-      .get() !== undefined
+    db.select().from(meta).where(eq(meta.key, SETUP_TOKEN_USED_KEY)).get() !==
+    undefined
   );
 }
 
-function markSetupTokenUsed(db: BetterSQLite3Database, now: () => number): void {
-  db.insert(meta)
-    .values({ key: SETUP_TOKEN_USED_KEY, value: String(now()) })
-    .run();
+function markSetupTokenUsed(db: BetterSQLite3Database): void {
+  db.insert(meta).values({ key: SETUP_TOKEN_USED_KEY, value: '1' }).run();
 }
 
 export type AuthRegisterDeps = {
@@ -109,9 +104,7 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     }
 
     const sessionScope = readSessionScope(deps, c);
-    if (
-      !registrationAllowed(deps, body.setupToken, sessionScope)
-    ) {
+    if (!registrationAllowed(deps, body.setupToken, sessionScope)) {
       return c.json({ error: 'Not Found' }, 404);
     }
 
@@ -122,7 +115,6 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
       rpName: 'Jackson OS',
       rpID: deps.rpId,
       userName: 'jackson',
-      userDisplayName: 'Jackson',
       attestationType: 'none',
       authenticatorSelection: {
         residentKey: 'required',
@@ -130,7 +122,9 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
       },
       excludeCredentials: deps.credentials.list().map((credential) => ({
         id: credential.id,
-        transports: JSON.parse(credential.transports) as AuthenticatorTransport[],
+        transports: JSON.parse(
+          credential.transports,
+        ) as AuthenticatorTransport[],
       })),
       challenge: issued.challenge,
     });
@@ -147,9 +141,7 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     }
 
     const sessionScope = readSessionScope(deps, c);
-    if (
-      !registrationAllowed(deps, body.setupToken, sessionScope)
-    ) {
+    if (!registrationAllowed(deps, body.setupToken, sessionScope)) {
       return c.json({ error: 'Not Found' }, 404);
     }
 
@@ -195,7 +187,7 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     });
 
     if (isFirstCredential) {
-      markSetupTokenUsed(deps.db, deps.now);
+      markSetupTokenUsed(deps.db);
     }
 
     const fullToken = deps.sessions.create({

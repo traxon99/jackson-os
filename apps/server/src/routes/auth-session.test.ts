@@ -2,12 +2,15 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { closeDb, openDb, runMigrations } from '@jos/db';
+import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { Hono } from 'hono';
-import { setSessionCookie, SESSION_COOKIE_NAME } from '../auth/cookie.js';
+import {
+  readSessionToken,
+  SESSION_COOKIE_NAME,
+  setSessionCookie,
+} from '../auth/cookie.js';
 import { createSessionService } from '../auth/sessions.js';
-import { readSessionToken } from '../auth/cookie.js';
 import { createGetSession } from '../middleware/auth-gate.js';
 
 const testOrigin = 'http://127.0.0.1';
@@ -21,10 +24,13 @@ function createAuthTestApp() {
   const conn = openDb(join(dir, 'test.db'));
   runMigrations(conn.db);
   const sessions = createSessionService(conn.db, () => Date.now());
-  const getSession = createGetSession(
-    (token) => sessions.lookup(token),
-    readSessionToken,
-  );
+  const getSession = createGetSession((token) => {
+    const record = sessions.lookup(token);
+    if (record === null) {
+      return null;
+    }
+    return { id: record.id, scope: record.scope };
+  }, readSessionToken);
 
   const webDist = mkdtempSync(join(tmpdir(), 'jos-web-'));
   writeFileSync(join(webDist, 'index.html'), '<!doctype html>');

@@ -23,6 +23,7 @@ export type TestStack = {
   runner: DatasetRunner;
   scheduler: Scheduler;
   registry: Registry;
+  now: () => number;
 };
 
 export function createTestStack(
@@ -80,7 +81,7 @@ export function createTestStack(
     },
   });
 
-  return { app, conn, dir, store, runner, scheduler, registry };
+  return { app, conn, dir, store, runner, scheduler, registry, now };
 }
 
 export function destroyTestStack(stack: TestStack): void {
