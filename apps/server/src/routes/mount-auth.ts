@@ -7,6 +7,7 @@ import { createRecoveryCodesService } from '../auth/recovery-codes.js';
 import { createSessionService, type SessionService } from '../auth/sessions.js';
 import type { AppConfig } from '../config.js';
 import { createGetSession, type GetSession } from '../middleware/auth-gate.js';
+import { createAuthLoginRoutes } from './auth-login.js';
 import { createAuthRegisterRoutes } from './auth-register.js';
 import { mountAuthSessionRoutes } from './auth-session.js';
 import { createRecoverRoutes } from './recover.js';
@@ -28,6 +29,9 @@ export function mountAuthRoutes(
   config: Pick<AppConfig, 'RP_ID' | 'APP_ORIGIN' | 'SETUP_TOKEN'> &
     Partial<Pick<AppConfig, 'TRUST_CLOUDFLARE'>>,
   auth: AuthServices,
+  log: { warn: (obj: Record<string, unknown>, msg?: string) => void } = {
+    warn: () => {},
+  },
 ): void {
   const challenges = createChallengeStore(stack.now);
   const credentials = createCredentialsStore(stack.conn.db);
@@ -58,6 +62,18 @@ export function mountAuthRoutes(
       recoveryCodes,
       now: stack.now,
       trustCloudflare: config.TRUST_CLOUDFLARE ?? false,
+    }),
+  );
+  api.route(
+    '/auth',
+    createAuthLoginRoutes({
+      rpId: config.RP_ID,
+      appOrigin: config.APP_ORIGIN,
+      sessions: auth.sessions,
+      challenges,
+      credentials,
+      now: stack.now,
+      log,
     }),
   );
 }

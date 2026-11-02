@@ -93,7 +93,13 @@ export function createApp(config: CreateAppConfig) {
     config.stack !== undefined &&
     config.authConfig !== undefined
   ) {
-    mountAuthRoutes(api, config.stack, config.authConfig, config.auth);
+    mountAuthRoutes(
+      api,
+      config.stack,
+      config.authConfig,
+      config.auth,
+      config.logger ?? { warn: () => {} },
+    );
   } else if (config.auth !== undefined) {
     mountAuthSessionRoutes(api, config.auth);
   } else {
