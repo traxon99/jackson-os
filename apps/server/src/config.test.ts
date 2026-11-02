@@ -4,6 +4,7 @@ import {
   loadConfig,
   logDisabledSources,
   resolveFileVars,
+  resolveWebDist,
   SECRET_KEYS,
   sourceStatus,
 } from './config.js';
@@ -92,6 +93,7 @@ describe('loadConfig', () => {
       NODE_ENV: 'development',
       PORT: 8080,
       APP_ORIGIN: 'https://app.example.com',
+      WEB_DIST: resolveWebDist('../web/dist'),
       DATA_DIR: '/data',
       RP_ID: 'os.jacksonyanek.com',
       SETUP_TOKEN: undefined,
