@@ -1,4 +1,6 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { defineConfig } from '@playwright/test';
 
 function systemChromiumPath(): string | undefined {
@@ -18,20 +20,31 @@ function systemChromiumPath(): string | undefined {
 }
 
 const chromiumExecutable = systemChromiumPath();
+const e2eDataDir = mkdtempSync(join(tmpdir(), 'jos-e2e-'));
+const setupToken = '01234567890123456789012345678901';
+const appOrigin = 'http://127.0.0.1:8080';
 
 export default defineConfig({
   testDir: './e2e',
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: appOrigin,
     ...(chromiumExecutable
       ? { launchOptions: { executablePath: chromiumExecutable } }
       : {}),
   },
   webServer: {
-    command: 'pnpm exec vite preview --host 127.0.0.1 --port 4173',
-    port: 4173,
+    command: [
+      `DATA_DIR=${e2eDataDir}`,
+      `APP_ORIGIN=${appOrigin}`,
+      'RP_ID=localhost',
+      `SETUP_TOKEN=${setupToken}`,
+      'NODE_ENV=development',
+      'PORT=8080',
+      'pnpm --filter server exec tsx src/index.ts',
+    ].join(' '),
+    port: 8080,
     reuseExistingServer: !process.env.CI,
   },
 });
