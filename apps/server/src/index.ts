@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
-import { openDb, runMigrations } from '@jos/db';
+import { closeDb, openDb, runMigrations } from '@jos/db';
 import { createApp } from './app.js';
 import {
   type AppConfig,
@@ -9,6 +9,7 @@ import {
   logDisabledSources,
   SECRET_KEYS,
 } from './config.js';
+import { createLifecycle } from './lifecycle.js';
 import { createLogger } from './log.js';
 
 const logger = createLogger({ secrets: SECRET_KEYS });
@@ -34,7 +35,25 @@ runMigrations(dbConn.db);
 
 const app = createApp(config);
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port: config.PORT,
 });
+
+const lifecycle = createLifecycle();
+lifecycle.registerStopHook(
+  () =>
+    new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    }),
+);
+lifecycle.registerStopHook(async () => {
+  closeDb(dbConn);
+});
+lifecycle.listenForSignals();
