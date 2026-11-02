@@ -28,6 +28,10 @@ const configSchema = z.object({
   GITHUB_TOKEN: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
   CLOUDFLARE_ZONE_ID: z.string().optional(),
+  TRUST_CLOUDFLARE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
@@ -161,6 +165,7 @@ export function loadConfig(
     GITHUB_TOKEN: resolvedEnv.GITHUB_TOKEN,
     CLOUDFLARE_API_TOKEN: resolvedEnv.CLOUDFLARE_API_TOKEN,
     CLOUDFLARE_ZONE_ID: resolvedEnv.CLOUDFLARE_ZONE_ID,
+    TRUST_CLOUDFLARE: resolvedEnv.TRUST_CLOUDFLARE,
   };
 
   const result = configSchema.safeParse(input);

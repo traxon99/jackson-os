@@ -101,6 +101,7 @@ describe('loadConfig', () => {
       GITHUB_TOKEN: undefined,
       CLOUDFLARE_API_TOKEN: undefined,
       CLOUDFLARE_ZONE_ID: undefined,
+      TRUST_CLOUDFLARE: false,
     });
   });
 
