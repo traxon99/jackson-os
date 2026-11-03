@@ -1,0 +1,56 @@
+/*
+ * Design tokens. Every color, size and font in the UI comes from here.
+ * See docs/UI.md for the rules behind them.
+ */
+:root {
+  /* Ground and surfaces: warm near-black, three steps. */
+  --bg: #0b0a09;
+  --surface-1: #121010;
+  --surface-2: #1a1716;
+  --line: #2a2522;
+  --line-strong: #3b342f;
+
+  /* Text: three steps. --text-mute still passes 4.5:1 on --surface-1. */
+  --text: #ece5da;
+  --text-dim: #a89f93;
+  --text-mute: #918779;
+
+  /* One accent. Status colors always ship with a word (OK, ERR, STALE). */
+  --accent: #e8823a;
+  --accent-strong: #ffb27a;
+  --on-accent: #0b0a09;
+  --ok: #7cc4a6;
+  --warn: #f2c14e;
+  --err: #ff6f86;
+
+  /* Type: one monospace family, Paper Mono, self-hosted in theme.css. */
+  --font-mono:
+    "Paper Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-label: 0.8333em; /* 10px at 12px base */
+  --fs-title: 0.9167em; /* 11px */
+  --fs-h1: 1.25em; /* 15px */
+  --fs-kpi: 1.75em; /* 21px */
+
+  /* Density. Compact is the default; [data-density='comfortable'] loosens it. */
+  --fs-base: 12px;
+  --row-pad: 3px;
+  --gap: 8px;
+  --pad: 8px;
+  --header-h: 26px;
+}
+
+:root[data-density="comfortable"] {
+  --fs-base: 13.5px;
+  --row-pad: 6px;
+  --gap: 14px;
+  --pad: 12px;
+  --header-h: 32px;
+}
+
+/* Phones get bigger text and 44px tap targets regardless of density. */
+@media (max-width: 767px) {
+  :root {
+    --fs-base: 13px;
+    --header-h: 44px;
+  }
+}

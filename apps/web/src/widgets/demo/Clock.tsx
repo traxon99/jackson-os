@@ -27,7 +27,7 @@ function NoopButton({ onDone }: { onDone: () => void }) {
           .finally(() => setPending(false));
       }}
     >
-      Run noop
+      run noop
     </button>
   );
 }

@@ -39,3 +39,4 @@ Every PR must include a **How I verified** section: the commands you ran and eno
 - [docs/SECURITY.md](docs/SECURITY.md)
 - [docs/ADDING-A-SOURCE.md](docs/ADDING-A-SOURCE.md)
 - [docs/PWA.md](docs/PWA.md)
+- [docs/UI.md](docs/UI.md): design tokens, Paper Mono, widget building rules
