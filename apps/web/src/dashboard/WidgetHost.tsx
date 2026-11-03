@@ -1,4 +1,4 @@
-import type { WidgetPayload } from '@jos/core';
+import { demoWidgets, type WidgetPayload } from '@jos/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet } from '../lib/api.js';
 import { getWidgetComponent } from '../widgets/registry.js';
@@ -17,6 +17,7 @@ export function WidgetHost({ id, title }: WidgetHostProps) {
   });
 
   const component = getWidgetComponent(id);
+  const source = demoWidgets.find((widget) => widget.id === id)?.source;
   if (component === undefined) {
     return null;
   }
@@ -28,6 +29,7 @@ export function WidgetHost({ id, title }: WidgetHostProps) {
   return (
     <WidgetFrame
       title={title}
+      source={source}
       payload={widgetQuery.data}
       isLoading={widgetQuery.isLoading}
       onRetry={() => void widgetQuery.refetch()}

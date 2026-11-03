@@ -7,6 +7,7 @@ import { useAuth } from './auth/useAuth.js';
 import { Dashboard } from './dashboard/Dashboard.js';
 import { InstallHint } from './pwa/InstallHint.js';
 import { PasskeysPage } from './settings/PasskeysPage.js';
+import { AppShell } from './shell/AppShell.js';
 
 function pathName(): string {
   return window.location.pathname;
@@ -47,19 +48,9 @@ export function App() {
     }
   } else {
     content = (
-      <>
-        <nav className="app-nav">
-          <a href="/">Home</a>
-          <a href="/settings/passkeys">Passkeys</a>
-        </nav>
-        {path === '/settings/passkeys' ? (
-          <PasskeysPage />
-        ) : (
-          <main className="app-shell scroll">
-            <Dashboard />
-          </main>
-        )}
-      </>
+      <AppShell path={path}>
+        {path === '/settings/passkeys' ? <PasskeysPage /> : <Dashboard />}
+      </AppShell>
     );
   }
 

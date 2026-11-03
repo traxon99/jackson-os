@@ -1,5 +1,5 @@
 import { demoWidgets } from '@jos/core';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { type Layout, Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -52,29 +52,62 @@ export function Dashboard() {
     setEditing(false);
   };
 
+  // `e` toggles edit mode; a ref keeps the listener stable across renders.
+  const editShortcut = useRef(() => {});
+  editShortcut.current = editing ? () => void finishEditing() : startEditing;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target !== null &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (
+        event.key === 'e' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !typing
+      ) {
+        editShortcut.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const toolbar = (
+    <header className="dashboard__toolbar">
+      <h1>Dashboard</h1>
+      <span className="t-mute dashboard__meta">{items.length} widgets</span>
+      <span className="wf__spacer" />
+      {editing ? (
+        <button
+          type="button"
+          className="btn--primary"
+          disabled={isSaving}
+          onClick={() => void finishEditing()}
+        >
+          Done
+        </button>
+      ) : (
+        <button type="button" onClick={startEditing}>
+          Edit
+        </button>
+      )}
+    </header>
+  );
+
   if (layoutQuery.isLoading) {
-    return <p>Loading layout…</p>;
+    return <p className="dashboard t-mute">Loading layout…</p>;
   }
 
   if (isPhone) {
     return (
-      <div className="dashboard">
-        <header className="dashboard__toolbar">
-          <h1>Dashboard</h1>
-          {editing ? (
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => void finishEditing()}
-            >
-              Done
-            </button>
-          ) : (
-            <button type="button" onClick={startEditing}>
-              Edit
-            </button>
-          )}
-        </header>
+      <div className={editing ? 'dashboard is-editing' : 'dashboard'}>
+        {toolbar}
         {editing ? (
           <PhoneReorder items={items} titles={titles} onChange={setDraft} />
         ) : (
@@ -85,29 +118,16 @@ export function Dashboard() {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard__toolbar">
-        <h1>Dashboard</h1>
-        {editing ? (
-          <button
-            type="button"
-            disabled={isSaving}
-            onClick={() => void finishEditing()}
-          >
-            Done
-          </button>
-        ) : (
-          <button type="button" onClick={startEditing}>
-            Edit
-          </button>
-        )}
-      </header>
+    <div className={editing ? 'dashboard is-editing' : 'dashboard'}>
+      {toolbar}
 
       <ResponsiveGridLayout
         className="dashboard-grid"
         breakpoints={breakpoints}
         cols={cols}
         rowHeight={48}
+        margin={[8, 8]}
+        containerPadding={[0, 0]}
         isDraggable={editing}
         isResizable={editing}
         compactType={null}

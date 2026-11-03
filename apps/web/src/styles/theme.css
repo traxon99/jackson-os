@@ -1,0 +1,222 @@
+/* Global element styles on top of tokens.css. Layout lives in app.css. */
+/* Paper Mono (SIL OFL 1.1, see assets/fonts/paper-mono/OFL.txt), self-hosted
+ * so it works under the strict CSP and offline in the PWA. */
+@font-face {
+  font-family: "Paper Mono";
+  src: url("../assets/fonts/paper-mono/PaperMono-wght.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--accent-strong);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Buttons: square, outlined, accent on hover. .btn--primary fills. */
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary,
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.btn--icon {
+  border-color: transparent;
+  color: var(--text-mute);
+  padding: 0 6px;
+}
+
+@media (max-width: 767px) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+  }
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  padding: 4px 8px;
+}
+
+input::placeholder {
+  color: var(--text-mute);
+}
+
+/* Text helpers */
+.t-accent {
+  color: var(--accent);
+}
+.t-dim {
+  color: var(--text-dim);
+}
+.t-mute {
+  color: var(--text-mute);
+}
+.t-ok {
+  color: var(--ok);
+}
+.t-warn {
+  color: var(--warn);
+}
+.t-err {
+  color: var(--err);
+}
+.t-label {
+  font-size: var(--fs-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.error {
+  color: var(--err);
+}
+
+/* Auth and settings pages: a narrow terminal-style column. */
+.auth-page,
+.settings-page {
+  max-width: 32rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap);
+}
+
+.auth-page h1::before,
+.settings-page h1::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: stretch;
+}
+
+.auth-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.passkey-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-self: stretch;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+}
+
+.passkey-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  padding: var(--row-pad) var(--pad);
+  border-bottom: 1px dashed var(--line);
+}
+
+.passkey-list li:last-child {
+  border-bottom: 0;
+}
+
+.passkey-list li > span:first-child {
+  flex: 1 1 auto;
+}
+
+.recovery-codes {
+  align-self: stretch;
+  padding: var(--pad);
+  background: var(--surface-1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  white-space: pre-wrap;
+}
+
+.recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}

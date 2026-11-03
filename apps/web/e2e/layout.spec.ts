@@ -27,6 +27,23 @@ const widgetFixtures: Record<string, unknown> = {
   },
 };
 
+const sourcesFixture = [
+  {
+    id: 'demo',
+    displayName: 'Demo',
+    status: 'ok',
+    lastFetchAt: '2026-01-01T12:00:00.000Z',
+    nextFetchAt: '2026-01-01T12:01:00.000Z',
+  },
+  {
+    id: 'github',
+    displayName: 'GitHub',
+    status: 'disabled',
+    lastFetchAt: null,
+    nextFetchAt: null,
+  },
+];
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
@@ -37,6 +54,15 @@ test.beforeEach(async ({ page }) => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ signedIn: true }),
+      });
+      return;
+    }
+
+    if (path === '/api/sources') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(sourcesFixture),
       });
       return;
     }

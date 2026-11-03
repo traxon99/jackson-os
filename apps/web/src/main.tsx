@@ -5,7 +5,8 @@ import { App } from './App.js';
 import { attachVisibilityFocusListener } from './pwa/focus-manager.js';
 import { registerServiceWorker } from './pwa/register.js';
 import { applyStandaloneClass } from './pwa/standalone.js';
-import './app.css';
+import './styles/tokens.css';
+import './styles/theme.css';
 import './styles/app.css';
 import './styles/base.css';
 
