@@ -20,6 +20,9 @@ import type { RecoveryCodesService } from '../auth/recovery-codes.js';
 import type { SessionService } from '../auth/sessions.js';
 
 const SETUP_TOKEN_USED_KEY = 'setup_token_used';
+const RP_USER_NAME = 'jackson';
+
+const preferredRegistrationAuthenticator = 'remoteDevice' as const;
 
 function tokensEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
@@ -115,7 +118,9 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     const options = await generateRegistrationOptions({
       rpName: 'Jackson OS',
       rpID: deps.rpId,
-      userName: 'jackson',
+      userName: RP_USER_NAME,
+      userDisplayName: RP_USER_NAME,
+      preferredAuthenticatorType: preferredRegistrationAuthenticator,
       attestationType: 'none',
       authenticatorSelection: {
         residentKey: 'required',

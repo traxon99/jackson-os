@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { PasskeyRegistrationHelp } from './PasskeyRegistrationHelp.js';
 import { invalidateAuth } from './useAuth.js';
 import { registerPasskey } from './webauthn.js';
 
@@ -32,7 +33,10 @@ export function SetupPage({ onRecoveryCodes }: SetupPageProps) {
   return (
     <main className="auth-page">
       <h1>Set up Jackson OS</h1>
-      <p>Enter your one-time setup token, then create a passkey.</p>
+      <p>
+        Enter your one-time setup token, then create a passkey on your phone by
+        scanning the QR code your browser shows.
+      </p>
       <label className="field">
         Setup token
         <input
@@ -50,6 +54,7 @@ export function SetupPage({ onRecoveryCodes }: SetupPageProps) {
       >
         Create passkey
       </button>
+      {busy ? <PasskeyRegistrationHelp /> : null}
       {error !== null ? <p className="error">{error}</p> : null}
     </main>
   );

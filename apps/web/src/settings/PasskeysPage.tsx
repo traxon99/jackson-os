@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { PasskeyRegistrationHelp } from '../auth/PasskeyRegistrationHelp.js';
 import { RecoveryCodesView } from '../auth/RecoveryCodesView.js';
 import { invalidateAuth } from '../auth/useAuth.js';
 import { registerPasskey } from '../auth/webauthn.js';
@@ -201,6 +202,7 @@ export function PasskeysPage() {
       <button type="button" disabled={busy} onClick={onAddPasskey}>
         Add another passkey
       </button>
+      {busy ? <PasskeyRegistrationHelp /> : null}
 
       <button type="button" disabled={busy} onClick={onRegenerateCodes}>
         Regenerate recovery codes
