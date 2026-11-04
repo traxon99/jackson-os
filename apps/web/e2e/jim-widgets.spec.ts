@@ -23,6 +23,7 @@ const jimWidgetIds = [
   'jim.lifts',
   'jim.body',
   'jim.next',
+  'jim.backend',
 ] as const;
 
 const jimTitles = [
@@ -33,6 +34,7 @@ const jimTitles = [
   'lifts',
   'body',
   'next',
+  'backend',
 ] as const;
 
 const jimLayout = {
@@ -45,6 +47,7 @@ const jimLayout = {
     { i: 'jim.lifts', x: 0, y: 6, w: 6, h: 3 },
     { i: 'jim.body', x: 6, y: 6, w: 3, h: 3 },
     { i: 'jim.next', x: 9, y: 6, w: 4, h: 3 },
+    { i: 'jim.backend', x: 0, y: 9, w: 6, h: 4 },
   ],
 };
 
@@ -73,6 +76,7 @@ function buildWidgetFixtures(mode: 'ok' | 'disabled'): Record<string, unknown> {
     'jim.lifts': loadWidgetFixture('jim.lifts.json'),
     'jim.body': loadWidgetFixture('jim.body.json'),
     'jim.next': loadWidgetFixture('jim.next.json'),
+    'jim.backend': loadWidgetFixture('jim.backend.json'),
   };
 }
 
@@ -185,6 +189,6 @@ test('Jim widgets disabled show Not configured', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/');
 
-  await expect(page.getByText('Not configured')).toHaveCount(7);
+  await expect(page.getByText('Not configured')).toHaveCount(8);
   expect(errors).toEqual([]);
 });

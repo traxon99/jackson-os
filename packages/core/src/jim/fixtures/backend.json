@@ -1,0 +1,90 @@
+{
+  "checkedAt": "2026-11-04T06:48:00Z",
+  "services": [
+    {
+      "id": "vercel",
+      "label": "Vercel",
+      "status": "operational",
+      "checkedAt": "2026-11-04T06:48:00Z",
+      "deployment": {
+        "url": "https://jim.jacksonyanek.com",
+        "environment": "production",
+        "state": "READY",
+        "commitSha": "a1b2c3d4e5f6789012345678901234567890abcd",
+        "createdAt": "2026-11-04T05:12:33Z"
+      },
+      "cron": {
+        "enabled": true,
+        "jobs": [
+          { "path": "/api/cron/push-reminders", "schedule": "*/15 * * * *" },
+          { "path": "/api/cron/sync-health", "schedule": "0 * * * *" }
+        ]
+      }
+    },
+    {
+      "id": "supabase",
+      "label": "Supabase",
+      "status": "operational",
+      "checkedAt": "2026-11-04T06:47:55Z",
+      "project": {
+        "ref": "abcdefghijklmnop",
+        "region": "us-east-1",
+        "status": "ACTIVE_HEALTHY"
+      },
+      "database": {
+        "postgresVersion": "15.8",
+        "pooler": "transaction"
+      },
+      "auth": {
+        "enabled": true
+      },
+      "storage": {
+        "enabled": true
+      },
+      "realtime": {
+        "enabled": false
+      }
+    },
+    {
+      "id": "cloudflare",
+      "label": "Cloudflare",
+      "status": "operational",
+      "checkedAt": "2026-11-04T06:47:50Z",
+      "zone": {
+        "name": "jacksonyanek.com",
+        "status": "active",
+        "ssl": "full_strict",
+        "proxied": true
+      },
+      "analytics": {
+        "requests24h": 12840,
+        "uniqueVisitors24h": 312,
+        "bytes24h": 943718400
+      },
+      "waf": {
+        "enabled": true,
+        "challenged24h": 4
+      }
+    },
+    {
+      "id": "fly",
+      "label": "Fly.io",
+      "status": "operational",
+      "checkedAt": "2026-11-04T06:47:58Z",
+      "app": "jim-mcp",
+      "region": "iad",
+      "machines": {
+        "total": 1,
+        "started": 1
+      },
+      "healthCheck": {
+        "path": "/healthz",
+        "passing": true
+      },
+      "image": {
+        "tag": "deployment-01HXYZ",
+        "sizeMb": 142
+      }
+    }
+  ]
+}

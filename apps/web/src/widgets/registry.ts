@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ClockWidget } from './demo/Clock.js';
 import { SeriesWidget } from './demo/Series.js';
 import {
+  JimBackendWidget,
   JimBodyWidget,
   JimLiftsWidget,
   JimNextWidget,
@@ -26,6 +27,7 @@ const registry: Record<string, WidgetComponent<unknown>> = {
   'jim.lifts': JimLiftsWidget as WidgetComponent<unknown>,
   'jim.body': JimBodyWidget as WidgetComponent<unknown>,
   'jim.next': JimNextWidget as WidgetComponent<unknown>,
+  'jim.backend': JimBackendWidget as WidgetComponent<unknown>,
 };
 
 export function getWidgetComponent(id: string): WidgetComponent | undefined {

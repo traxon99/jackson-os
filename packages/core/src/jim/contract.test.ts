@@ -47,6 +47,9 @@ runAdapterContract(jimAdapter, {
     if (url.includes('/v1/dpr')) {
       return Response.json(loadFixture('dpr.json'));
     }
+    if (url.includes('/v1/backend')) {
+      return Response.json(loadFixture('backend.json'));
+    }
     return Response.json({}, { status: 404 });
   },
 });

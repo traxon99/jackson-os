@@ -1,3 +1,4 @@
+export { JimBackendWidget } from './Backend.js';
 export { JimBodyWidget } from './Body.js';
 export { JimLiftsWidget } from './Lifts.js';
 export { JimNextWidget } from './Next.js';
