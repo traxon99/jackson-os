@@ -15,7 +15,10 @@ describe('openTestDb', () => {
   it('opens PGlite and applies migrations', async () => {
     conn = await openTestDb();
     await runMigrations(conn);
-    const rows = await conn.client!.query<{ tablename: string }>(
+    if (conn.client === undefined) {
+      throw new Error('expected PGlite client');
+    }
+    const rows = await conn.client.query<{ tablename: string }>(
       "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename",
     );
     const names = rows.rows.map((r) => r.tablename);
