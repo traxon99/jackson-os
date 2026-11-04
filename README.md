@@ -53,6 +53,8 @@ docker compose -f deploy/compose.yaml --profile tunnel up
 
 The Compose stack above is production. Supabase holds the database. Env vars, the one-time migration, and the tunnel are in [docs/HOSTING.md](docs/HOSTING.md). Nothing in GitHub Actions deploys the app.
 
+On the host, `./deploy/watch-and-deploy.sh` rebuilds Compose whenever `main` moves on GitHub.
+
 ## Environment variables by run mode
 
 | Variable                                                 | Dev                                       | Host (Compose)                                           |
