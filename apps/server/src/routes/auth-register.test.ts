@@ -1,10 +1,10 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
 import { CHALLENGE_COOKIE_NAME, SESSION_COOKIE_NAME } from '../auth/cookie.js';
+import { createTestConn } from '../test-db.js';
 import { createAuthServices } from './mount-auth.js';
 
 const setupToken = '01234567890123456789012345678901';
@@ -21,10 +21,8 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 
 const testOrigin = 'http://127.0.0.1';
 
-function postInit() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-reg-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+async function postInit() {
+  const { conn, cleanup: dbCleanup } = await createTestConn();
   const webDist = mkdtempSync(join(tmpdir(), 'jos-web-'));
   writeFileSync(join(webDist, 'index.html'), '<!doctype html>');
   const now = () => 1_000_000;
@@ -56,9 +54,8 @@ function postInit() {
     app,
     conn,
     auth,
-    cleanup: () => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+    cleanup: async () => {
+      await dbCleanup();
       rmSync(webDist, { recursive: true, force: true });
     },
   };
@@ -70,7 +67,7 @@ describe('POST /api/auth/register', () => {
   });
 
   it('returns 404 without a setup token when no credentials exist', async () => {
-    const { app, cleanup } = postInit();
+    const { app, cleanup } = await postInit();
     try {
       const response = await app.request('/api/auth/register/options', {
         method: 'POST',
@@ -79,12 +76,12 @@ describe('POST /api/auth/register', () => {
       });
       expect(response.status).toBe(404);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns 200 with the correct setup token and zero credentials', async () => {
-    const { app, cleanup } = postInit();
+    const { app, cleanup } = await postInit();
     try {
       const response = await app.request('/api/auth/register/options', {
         method: 'POST',
@@ -96,12 +93,12 @@ describe('POST /api/auth/register', () => {
         CHALLENGE_COOKIE_NAME,
       );
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns 404 when reusing the setup token after first registration', async () => {
-    const { app, auth, cleanup } = postInit();
+    const { app, auth, cleanup } = await postInit();
     try {
       vi.mocked(verifyRegistrationResponse).mockResolvedValue({
         verified: true,
@@ -151,7 +148,7 @@ describe('POST /api/auth/register', () => {
       });
       expect(retry.status).toBe(404);
 
-      const sessionToken = auth.sessions.create({ scope: 'full' });
+      const sessionToken = await auth.sessions.create({ scope: 'full' });
       const signedIn = await app.request('/api/auth/register/options', {
         method: 'POST',
         headers: {
@@ -163,7 +160,7 @@ describe('POST /api/auth/register', () => {
       });
       expect(signedIn.status).toBe(200);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 });

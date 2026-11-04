@@ -1,7 +1,6 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
@@ -12,6 +11,7 @@ import {
 } from '../auth/cookie.js';
 import { createSessionService } from '../auth/sessions.js';
 import { createGetSession } from '../middleware/auth-gate.js';
+import { createTestConn } from '../test-db.js';
 
 const testOrigin = 'http://127.0.0.1';
 
@@ -19,13 +19,11 @@ function authHeaders(cookie: string): Record<string, string> {
   return { Cookie: cookie, Origin: testOrigin };
 }
 
-function createAuthTestApp() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-auth-session-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+async function createAuthTestApp() {
+  const { conn, cleanup: dbCleanup } = await createTestConn();
   const sessions = createSessionService(conn.db, () => Date.now());
-  const getSession = createGetSession((token) => {
-    const record = sessions.lookup(token);
+  const getSession = createGetSession(async (token) => {
+    const record = await sessions.lookup(token);
     if (record === null) {
       return null;
     }
@@ -44,9 +42,8 @@ function createAuthTestApp() {
   return {
     app,
     sessions,
-    cleanup: () => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+    cleanup: async () => {
+      await dbCleanup();
       rmSync(webDist, { recursive: true, force: true });
     },
   };
@@ -73,9 +70,9 @@ describe('session cookie', () => {
 
 describe('auth session routes', () => {
   it('returns signedIn from /api/auth/me', async () => {
-    const { app, sessions, cleanup } = createAuthTestApp();
+    const { app, sessions, cleanup } = await createAuthTestApp();
     try {
-      const token = sessions.create({});
+      const token = await sessions.create({});
       const signedIn = await app.request('/api/auth/me', {
         headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` },
       });
@@ -85,14 +82,14 @@ describe('auth session routes', () => {
       const signedOut = await app.request('/api/auth/me');
       await expect(signedOut.json()).resolves.toEqual({ signedIn: false });
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('rejects API access after sign-out', async () => {
-    const { app, sessions, cleanup } = createAuthTestApp();
+    const { app, sessions, cleanup } = await createAuthTestApp();
     try {
-      const token = sessions.create({});
+      const token = await sessions.create({});
       const cookie = `${SESSION_COOKIE_NAME}=${token}`;
 
       await app.request('/api/auth/signout', {
@@ -105,15 +102,15 @@ describe('auth session routes', () => {
       });
       expect(response.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('sign-out-all revokes other sessions', async () => {
-    const { app, sessions, cleanup } = createAuthTestApp();
+    const { app, sessions, cleanup } = await createAuthTestApp();
     try {
-      const tokenA = sessions.create({});
-      const tokenB = sessions.create({});
+      const tokenA = await sessions.create({});
+      const tokenB = await sessions.create({});
 
       await app.request('/api/auth/signout-all', {
         method: 'POST',
@@ -125,7 +122,7 @@ describe('auth session routes', () => {
       });
       await expect(meB.json()).resolves.toEqual({ signedIn: false });
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 });

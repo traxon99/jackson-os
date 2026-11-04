@@ -1,11 +1,11 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
 import { CHALLENGE_COOKIE_NAME, SESSION_COOKIE_NAME } from '../auth/cookie.js';
 import { createCredentialsStore } from '../auth/credentials.js';
+import { createTestConn } from '../test-db.js';
 import { createAuthServices } from './mount-auth.js';
 
 const testOrigin = 'http://127.0.0.1';
@@ -24,10 +24,8 @@ vi.mock('@simplewebauthn/server', () => ({
 
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 
-function postInit() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-login-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+async function postInit() {
+  const { conn, cleanup: dbCleanup } = await createTestConn();
   const webDist = mkdtempSync(join(tmpdir(), 'jos-web-'));
   writeFileSync(join(webDist, 'index.html'), '<!doctype html>');
   const now = () => 1_000_000;
@@ -60,9 +58,8 @@ function postInit() {
     app,
     conn,
     credentials,
-    cleanup: () => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+    cleanup: async () => {
+      await dbCleanup();
       rmSync(webDist, { recursive: true, force: true });
     },
   };
@@ -92,7 +89,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('returns 401 for an unknown credential', async () => {
-    const { app, cleanup } = postInit();
+    const { app, cleanup } = await postInit();
     try {
       const options = await loginOptions(app);
       const chal = challengeCookie(options);
@@ -108,14 +105,14 @@ describe('POST /api/auth/login', () => {
       });
       expect(response.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns 401 when the signature counter regresses', async () => {
-    const { app, credentials, cleanup } = postInit();
+    const { app, credentials, cleanup } = await postInit();
     try {
-      credentials.insert({
+      await credentials.insert({
         id: 'cred-1',
         publicKey: Buffer.from([1, 2, 3]).toString('base64url'),
         counter: 5,
@@ -152,14 +149,14 @@ describe('POST /api/auth/login', () => {
       });
       expect(response.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns 401 when the challenge is replayed', async () => {
-    const { app, credentials, cleanup } = postInit();
+    const { app, credentials, cleanup } = await postInit();
     try {
-      credentials.insert({
+      await credentials.insert({
         id: 'cred-2',
         publicKey: Buffer.from([1, 2, 3]).toString('base64url'),
         counter: 0,
@@ -209,14 +206,14 @@ describe('POST /api/auth/login', () => {
       });
       expect(replay.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns 401 for a revoked credential', async () => {
-    const { app, credentials, cleanup } = postInit();
+    const { app, credentials, cleanup } = await postInit();
     try {
-      credentials.insert({
+      await credentials.insert({
         id: 'cred-revoked',
         publicKey: Buffer.from([1, 2, 3]).toString('base64url'),
         counter: 0,
@@ -241,7 +238,7 @@ describe('POST /api/auth/login', () => {
       });
       expect(response.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 });

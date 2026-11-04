@@ -1,21 +1,21 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
 import { SESSION_COOKIE_NAME } from '../auth/cookie.js';
 import { createCredentialsStore } from '../auth/credentials.js';
+import { createTestConn } from '../test-db.js';
 import { createAuthServices } from './mount-auth.js';
 
 const testOrigin = 'http://127.0.0.1';
 
-function seedCredential(
+async function seedCredential(
   credentials: ReturnType<typeof createCredentialsStore>,
   id: string,
   deviceName: string,
 ) {
-  credentials.insert({
+  await credentials.insert({
     id,
     publicKey: 'pk-test',
     counter: 0,
@@ -26,10 +26,8 @@ function seedCredential(
   });
 }
 
-function createPasskeysTestApp() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-passkeys-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+async function createPasskeysTestApp() {
+  const { conn, cleanup: dbCleanup } = await createTestConn();
   const webDist = mkdtempSync(join(tmpdir(), 'jos-web-'));
   writeFileSync(join(webDist, 'index.html'), '<!doctype html>');
   const now = () => 1_000_000;
@@ -62,9 +60,8 @@ function createPasskeysTestApp() {
     app,
     auth,
     credentials,
-    cleanup: () => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+    cleanup: async () => {
+      await dbCleanup();
       rmSync(webDist, { recursive: true, force: true });
     },
   };
@@ -79,10 +76,10 @@ function sessionHeaders(token: string): Record<string, string> {
 
 describe('passkey management API', () => {
   it('GET /api/passkeys omits public_key from each item', async () => {
-    const { app, auth, credentials, cleanup } = createPasskeysTestApp();
+    const { app, auth, credentials, cleanup } = await createPasskeysTestApp();
     try {
-      seedCredential(credentials, 'cred-1', 'Laptop');
-      const token = auth.sessions.create({});
+      await seedCredential(credentials, 'cred-1', 'Laptop');
+      const token = await auth.sessions.create({});
 
       const response = await app.request('/api/passkeys', {
         headers: sessionHeaders(token),
@@ -99,32 +96,32 @@ describe('passkey management API', () => {
       expect(body[0]).not.toHaveProperty('public_key');
       expect(body[0]).not.toHaveProperty('publicKey');
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('DELETE /api/passkeys/:id returns 409 for the last credential', async () => {
-    const { app, auth, credentials, cleanup } = createPasskeysTestApp();
+    const { app, auth, credentials, cleanup } = await createPasskeysTestApp();
     try {
-      seedCredential(credentials, 'only-one', 'Phone');
-      const token = auth.sessions.create({});
+      await seedCredential(credentials, 'only-one', 'Phone');
+      const token = await auth.sessions.create({});
 
       const response = await app.request('/api/passkeys/only-one', {
         method: 'DELETE',
         headers: sessionHeaders(token),
       });
       expect(response.status).toBe(409);
-      expect(credentials.count()).toBe(1);
+      expect(await credentials.count()).toBe(1);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('PATCH /api/passkeys/:id rejects deviceName longer than 50 characters', async () => {
-    const { app, auth, credentials, cleanup } = createPasskeysTestApp();
+    const { app, auth, credentials, cleanup } = await createPasskeysTestApp();
     try {
-      seedCredential(credentials, 'cred-2', 'Tablet');
-      const token = auth.sessions.create({});
+      await seedCredential(credentials, 'cred-2', 'Tablet');
+      const token = await auth.sessions.create({});
 
       const response = await app.request('/api/passkeys/cred-2', {
         method: 'PATCH',
@@ -136,26 +133,26 @@ describe('passkey management API', () => {
       });
       expect(response.status).toBe(400);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('DELETE /api/passkeys/:id removes a credential when others remain', async () => {
-    const { app, auth, credentials, cleanup } = createPasskeysTestApp();
+    const { app, auth, credentials, cleanup } = await createPasskeysTestApp();
     try {
-      seedCredential(credentials, 'keep-me', 'Desktop');
-      seedCredential(credentials, 'remove-me', 'Old phone');
-      const token = auth.sessions.create({});
+      await seedCredential(credentials, 'keep-me', 'Desktop');
+      await seedCredential(credentials, 'remove-me', 'Old phone');
+      const token = await auth.sessions.create({});
 
       const response = await app.request('/api/passkeys/remove-me', {
         method: 'DELETE',
         headers: sessionHeaders(token),
       });
       expect(response.status).toBe(204);
-      expect(credentials.count()).toBe(1);
-      expect(credentials.getById('remove-me')).toBeUndefined();
+      expect(await credentials.count()).toBe(1);
+      expect(await credentials.getById('remove-me')).toBeUndefined();
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 });

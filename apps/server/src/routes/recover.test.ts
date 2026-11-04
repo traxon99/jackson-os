@@ -56,7 +56,7 @@ function mountFullAuth(stack: TestStack, webDist: string) {
 describe('POST /api/auth/recover', () => {
   it('returns 403 for widget access with a recovery session', async () => {
     const webDist = mkdtempSync(join(tmpdir(), 'w'));
-    const stack = createTestStack({
+    const stack = await createTestStack({
       WEB_DIST: webDist,
       APP_ORIGIN: testOrigin,
     });
@@ -80,12 +80,12 @@ describe('POST /api/auth/recover', () => {
       });
       expect(widget.status).toBe(403);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
   it('logs a failed recovery attempt', async () => {
     const webDist = mkdtempSync(join(tmpdir(), 'w'));
-    const stack = createTestStack({
+    const stack = await createTestStack({
       WEB_DIST: webDist,
       APP_ORIGIN: testOrigin,
     });
@@ -96,12 +96,12 @@ describe('POST /api/auth/recover', () => {
         headers: authHeaders(),
         body: JSON.stringify({ code: 'bad' }),
       });
-      const rows = stack.conn.db.select().from(actionLog).all();
+      const rows = await stack.conn.db.select().from(actionLog);
       expect(
         rows.some((r) => r.action === 'recover' && r.result === 'fail'),
       ).toBe(true);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
   it('leaves one full session after recovery registration', async () => {
@@ -117,7 +117,7 @@ describe('POST /api/auth/recover', () => {
       },
     } as never);
     const webDist = mkdtempSync(join(tmpdir(), 'w'));
-    const stack = createTestStack({
+    const stack = await createTestStack({
       WEB_DIST: webDist,
       APP_ORIGIN: testOrigin,
     });
@@ -148,9 +148,11 @@ describe('POST /api/auth/recover', () => {
         body: JSON.stringify({ response: { id: 'cred-id' } }),
       });
       expect(verify.status).toBe(200);
-      expect(stack.conn.db.select().from(sessionsTable).all()).toHaveLength(1);
+      expect(
+        await stack.conn.db.select().from(sessionsTable),
+      ).toHaveLength(1);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 });

@@ -1,8 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createRegistry, type SourceAdapter } from '@jos/core';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -10,6 +6,7 @@ import { createSnapshotStore } from '../data/snapshots.js';
 import { createLimiter } from '../lib/rate-limit.js';
 import { createRunner } from '../scheduler/run-dataset.js';
 import { createScheduler } from '../scheduler/scheduler.js';
+import { createTestConn } from '../test-db.js';
 import {
   createTestStack,
   destroyTestStack,
@@ -21,9 +18,9 @@ import { createSourcesRoutes } from './sources.js';
 describe('GET /api/sources and POST refresh', () => {
   it('returns the expected status shape', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({ WEB_DIST: webDist, now: () => 5000 });
-    stack.store.putOk('demo', 'clock', { iso: 'x' }, 1000, 9000);
-    stack.scheduler.start();
+    const stack = await createTestStack({ WEB_DIST: webDist, now: () => 5000 });
+    await stack.store.putOk('demo', 'clock', { iso: 'x' }, 1000, 9000);
+    await stack.scheduler.start();
 
     try {
       const response = await stack.app.request('/api/sources', {
@@ -46,14 +43,12 @@ describe('GET /api/sources and POST refresh', () => {
       expect(demo?.lastFetchAt).toEqual(expect.any(String));
       expect(demo?.nextFetchAt).toEqual(expect.any(String));
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns 429 on the 4th rapid refresh', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'jos-refresh-limit-'));
-    const conn = openDb(join(dir, 'test.db'));
-    runMigrations(conn.db);
+    const { conn, cleanup } = await createTestConn();
     const registry = createRegistry();
     const source: SourceAdapter = {
       id: 'demo',
@@ -117,8 +112,7 @@ describe('GET /api/sources and POST refresh', () => {
       expect(blocked.status).toBe(429);
     } finally {
       scheduler.stop();
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 });

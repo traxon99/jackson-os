@@ -1,10 +1,7 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { createRegistry, type SourceAdapter, UpstreamError } from '@jos/core';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { createTestConn } from '../test-db.js';
 import { createSnapshotStore } from '../data/snapshots.js';
 import type { DatasetRunner } from './run-dataset.js';
 import { createScheduler } from './scheduler.js';
@@ -37,11 +34,9 @@ describe('createScheduler', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
 
-    const dir = mkdtempSync(join(tmpdir(), 'jos-scheduler-'));
-    const conn = openDb(join(dir, 'test.db'));
-    runMigrations(conn.db);
+    const { conn, cleanup } = await createTestConn();
     const store = createSnapshotStore(conn.db);
-    store.putOk('demo', 'main', { ok: true }, 0, 0);
+    await store.putOk('demo', 'main', { ok: true }, 0, 0);
 
     const registry = createRegistry();
     registry.registerSource(failingSource());
@@ -54,10 +49,10 @@ describe('createScheduler', () => {
         _config,
       ): Promise<{ retryAfterMs?: number } | undefined> => {
         if (shouldFail) {
-          store.putError(source.id, datasetKey, 'fail');
+          await store.putError(source.id, datasetKey, 'fail');
           return undefined;
         }
-        store.putOk(
+        await store.putOk(
           source.id,
           datasetKey,
           { ok: true },
@@ -79,7 +74,7 @@ describe('createScheduler', () => {
     });
 
     try {
-      scheduler.start();
+      await scheduler.start();
 
       await vi.advanceTimersByTimeAsync(everyMs);
       expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(
@@ -101,8 +96,7 @@ describe('createScheduler', () => {
       expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(everyMs);
     } finally {
       scheduler.stop();
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 
@@ -110,11 +104,9 @@ describe('createScheduler', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
 
-    const dir = mkdtempSync(join(tmpdir(), 'jos-scheduler-retry-'));
-    const conn = openDb(join(dir, 'test.db'));
-    runMigrations(conn.db);
+    const { conn, cleanup } = await createTestConn();
     const store = createSnapshotStore(conn.db);
-    store.putOk('demo', 'main', { ok: true }, 0, 0);
+    await store.putOk('demo', 'main', { ok: true }, 0, 0);
 
     const registry = createRegistry();
     registry.registerSource({
@@ -137,7 +129,7 @@ describe('createScheduler', () => {
 
     const runner: DatasetRunner = {
       run: async (source, datasetKey, _config) => {
-        store.putError(source.id, datasetKey, 'upstream 429 · retry in 3m');
+        await store.putError(source.id, datasetKey, 'upstream 429 · retry in 3m');
         return { retryAfterMs: 180_000 };
       },
     };
@@ -153,7 +145,7 @@ describe('createScheduler', () => {
     });
 
     try {
-      scheduler.start();
+      await scheduler.start();
       await vi.advanceTimersByTimeAsync(everyMs);
 
       expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(180_000);
@@ -163,8 +155,7 @@ describe('createScheduler', () => {
       expect(nextAt).toBeGreaterThanOrEqual(Date.now() + 180_000 - 1000);
     } finally {
       scheduler.stop();
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 });

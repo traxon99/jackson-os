@@ -11,7 +11,7 @@ import {
 describe('POST /api/actions/:sourceId/:action', () => {
   it('returns 400 for invalid input without logging', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({ WEB_DIST: webDist });
+    const stack = await createTestStack({ WEB_DIST: webDist });
     try {
       const response = await stack.app.request('/api/actions/demo/noop', {
         method: 'POST',
@@ -22,16 +22,16 @@ describe('POST /api/actions/:sourceId/:action', () => {
         body: JSON.stringify({ note: 'x'.repeat(101) }),
       });
       expect(response.status).toBe(400);
-      const rows = stack.conn.db.select().from(actionLog).all();
+      const rows = await stack.conn.db.select().from(actionLog);
       expect(rows).toHaveLength(0);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('runs demo noop and refetches series', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({
+    const stack = await createTestStack({
       WEB_DIST: webDist,
       now: () => new Date('2026-01-01T12:00:00.000Z').getTime(),
     });
@@ -47,18 +47,18 @@ describe('POST /api/actions/:sourceId/:action', () => {
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({ ok: true });
 
-      const rows = stack.conn.db.select().from(actionLog).all();
+      const rows = await stack.conn.db.select().from(actionLog);
       expect(rows).toHaveLength(1);
       expect(rows[0]?.result).toBe('ok');
-      expect(stack.store.get('demo', 'series')?.status).toBe('ok');
+      expect((await stack.store.get('demo', 'series'))?.status).toBe('ok');
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns 500 and logs error rows for throwing actions', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({ WEB_DIST: webDist });
+    const stack = await createTestStack({ WEB_DIST: webDist });
     const source = stack.registry.getSource('demo');
     expect(source).toBeDefined();
     if (source === undefined) {
@@ -84,11 +84,11 @@ describe('POST /api/actions/:sourceId/:action', () => {
         body: JSON.stringify({}),
       });
       expect(response.status).toBe(500);
-      const rows = stack.conn.db.select().from(actionLog).all();
+      const rows = await stack.conn.db.select().from(actionLog);
       expect(rows).toHaveLength(1);
       expect(rows[0]?.result).toBe('error:boom');
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 });

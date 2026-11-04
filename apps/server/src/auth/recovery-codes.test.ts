@@ -1,25 +1,22 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { closeDb, openDb, recoveryCodes, runMigrations } from '@jos/db';
+import { recoveryCodes } from '@jos/db';
 import { describe, expect, it } from 'vitest';
+import { createTestConn } from '../test-db.js';
 import { createRecoveryCodesService } from './recovery-codes.js';
 
 describe('recovery codes service', () => {
-  function withDb(
+  async function withDb(
     run: (deps: {
-      db: ReturnType<typeof openDb>['db'];
+      db: Awaited<ReturnType<typeof createTestConn>>['conn']['db'];
       service: ReturnType<typeof createRecoveryCodesService>;
     }) => Promise<void>,
   ): Promise<void> {
-    const dir = mkdtempSync(join(tmpdir(), 'jos-recovery-codes-'));
-    const conn = openDb(join(dir, 'app.db'));
-    runMigrations(conn.db);
+    const { conn, cleanup } = await createTestConn();
     const service = createRecoveryCodesService(conn.db, () => 1000);
-    return run({ db: conn.db, service }).finally(() => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
-    });
+    try {
+      await run({ db: conn.db, service });
+    } finally {
+      await cleanup();
+    }
   }
 
   it('accepts a code once and rejects reuse', async () => {
@@ -37,11 +34,8 @@ describe('recovery codes service', () => {
       expect(await service.consume(code0)).toBe(true);
       expect(await service.consume(code0)).toBe(false);
 
-      const row = db
-        .select()
-        .from(recoveryCodes)
-        .all()
-        .find((entry) => entry.usedAt === 1000);
+      const rows = await db.select().from(recoveryCodes);
+      const row = rows.find((entry) => entry.usedAt === 1000);
       expect(row).toBeDefined();
     });
   });
@@ -64,7 +58,7 @@ describe('recovery codes service', () => {
   it('stores only argon2 hashes, never raw codes', async () => {
     await withDb(async ({ db, service }) => {
       const codes = await service.generate();
-      const rows = db.select().from(recoveryCodes).all();
+      const rows = await db.select().from(recoveryCodes);
       expect(rows).toHaveLength(10);
       for (const row of rows) {
         expect(codes).not.toContain(row.codeHash);
