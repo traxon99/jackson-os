@@ -118,10 +118,7 @@ export function createApp(config: CreateAppConfig) {
   }
 
   app.route('/api', api);
-
-  if (process.env.VERCEL !== '1') {
-    mountStatic(app, resolved.WEB_DIST);
-  }
+  mountStatic(app, resolved.WEB_DIST);
 
   return app;
 }

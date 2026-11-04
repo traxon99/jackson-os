@@ -15,7 +15,7 @@ export type DbConnection = {
 export async function openDb(databaseUrl: string): Promise<DbConnection> {
   const sql = postgres(databaseUrl, {
     prepare: false,
-    max: process.env.VERCEL === '1' ? 1 : 10,
+    max: 10,
   });
   const db = drizzle(sql, { schema });
   return { kind: 'postgres', sql, db };

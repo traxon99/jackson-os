@@ -30,15 +30,10 @@ Use this when you saved a recovery code at setup.
 2. Enter a single-use recovery code. The server creates a short-lived **recovery** session.
 3. Register a new passkey (same flow as first-time setup). That passkey becomes your daily sign-in method.
 
-**Compose (local / homelab)** — `APP_ORIGIN` is usually `http://localhost:8080`:
+**This machine (Compose)** — `APP_ORIGIN` is the URL you open. On the host that is usually `http://localhost:8080`. Behind the Cloudflare tunnel it is the public origin, for example `https://os.jacksonyanek.com`:
 
 ```text
 http://localhost:8080/recover
-```
-
-**Fly (production)** — `APP_ORIGIN` is `https://os.jacksonyanek.com`:
-
-```text
 https://os.jacksonyanek.com/recover
 ```
 
@@ -81,25 +76,14 @@ pnpm --filter server admin reset-auth --yes
 
 Set `SETUP_TOKEN` in the environment (or `.env`), restart `pnpm dev` / the server process, then open `http://localhost:8080/setup`.
 
-#### Fly
+#### Deprecated — Fly
 
-SSH into the machine and run the same CLI against `/data`:
+The Fly app is not production. If you are rolling back to [`deploy/fly.toml`](../deploy/fly.toml), SSH in and run the same CLI:
 
 ```bash
 fly ssh console -a <your-app-name>
 node /out/dist/admin.js reset-auth --yes
-```
-
-Set the new token and redeploy or restart:
-
-```bash
 fly secrets set SETUP_TOKEN=<paste-token-here> -a <your-app-name>
 ```
 
-Open:
-
-```text
-https://os.jacksonyanek.com/setup
-```
-
-Replace `<your-app-name>` with the Fly app name from `deploy/fly.toml`.
+Replace `<your-app-name>` with the Fly app name from `deploy/fly.toml`, then open `https://os.jacksonyanek.com/setup`.

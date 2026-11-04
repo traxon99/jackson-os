@@ -121,8 +121,7 @@ export async function buildApp(
 
   const lifecycle = createLifecycle();
 
-  const useInProcessScheduler =
-    env.VERCEL !== '1' && env.DISABLE_SCHEDULER !== 'true';
+  const useInProcessScheduler = env.DISABLE_SCHEDULER !== 'true';
 
   if (useInProcessScheduler) {
     lifecycle.registerStartHook(async () => {

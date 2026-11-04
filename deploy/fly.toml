@@ -1,4 +1,4 @@
-# DEPRECATED: production moved to Vercel + Supabase (see docs/HOSTING.md). Kept for rollback.
+# DEPRECATED: production runs on this machine via deploy/compose.yaml (see docs/HOSTING.md). Kept for rollback.
 # fly.toml app config — see https://fly.io/docs/reference/configuration/
 
 app = "jackson-os"
