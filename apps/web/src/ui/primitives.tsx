@@ -1,4 +1,10 @@
-import type { ReactNode } from 'react';
+import {
+  Children,
+  type CSSProperties,
+  isValidElement,
+  type ReactNode,
+} from 'react';
+import { computeDelta } from './delta.js';
 import { sparklinePoints } from './sparkline.js';
 
 /*
@@ -101,6 +107,102 @@ export function Meter({ value, label }: { value: number; label: string }) {
         style={{ width: `${clamped * 100}%` }}
       />
     </span>
+  );
+}
+
+/** Change vs a previous value: ▲ 12%, ▼ 3%, = 0%, or new. */
+export function Delta({
+  current,
+  previous,
+  goodWhen = 'up',
+}: {
+  current: number;
+  previous: number | null | undefined;
+  goodWhen?: 'up' | 'down' | 'neither';
+}) {
+  const result = computeDelta(current, previous);
+  let text: string;
+  let className = 't-mute';
+
+  if (result.kind === 'new') {
+    text = 'new';
+  } else if (result.kind === 'same') {
+    text = '= 0%';
+  } else if (result.kind === 'up') {
+    text = `▲ ${result.pct}%`;
+    if (goodWhen === 'neither') {
+      className = 't-mute';
+    } else if (goodWhen === 'up') {
+      className = 't-ok';
+    } else {
+      className = 't-err';
+    }
+  } else {
+    text = `▼ ${result.pct}%`;
+    if (goodWhen === 'neither') {
+      className = 't-mute';
+    } else if (goodWhen === 'down') {
+      className = 't-ok';
+    } else {
+      className = 't-err';
+    }
+  }
+
+  return <span className={className}>{text}</span>;
+}
+
+/** Compact table rows aligned on a CSS grid. */
+export function Rows({
+  columns,
+  children,
+  label,
+}: {
+  columns: string;
+  children: ReactNode;
+  label?: string;
+}) {
+  const style: CSSProperties = { gridTemplateColumns: columns };
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: shared grid uses display:contents on rows
+    <div role="table" aria-label={label} className="rows" style={style}>
+      {children}
+    </div>
+  );
+}
+
+/** One row inside `Rows`. Link the first cell with `href`. */
+export function Row({
+  children,
+  href,
+  linkCell = 0,
+}: {
+  children: ReactNode;
+  href?: string;
+  linkCell?: number;
+}) {
+  const cells = Children.toArray(children);
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: row wrapper uses display:contents
+    // biome-ignore lint/a11y/useFocusableInteractive: presentational row in grid table
+    <div role="row" className="rows__row">
+      {cells.map((child, index) => {
+        const key = isValidElement(child) ? child.key : index;
+        const content =
+          index === linkCell && href !== undefined ? (
+            <a href={href} target="_blank" rel="noopener noreferrer">
+              {child}
+            </a>
+          ) : (
+            child
+          );
+        return (
+          // biome-ignore lint/a11y/useSemanticElements: cell aligns via parent grid
+          <span role="cell" className="rows__cell" key={key ?? index}>
+            {content}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

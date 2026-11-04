@@ -1,0 +1,89 @@
+{
+  "state": "ok",
+  "data": {
+    "plan": {
+      "scheduled": [
+        {
+          "date": "2026-11-04",
+          "routineId": "r_push",
+          "routineName": "Push A",
+          "exerciseCount": 6,
+          "programName": "PPL",
+          "webUrl": "https://jim.example.com/routines/r_push"
+        },
+        {
+          "date": "2026-11-06",
+          "routineId": "r_pull",
+          "routineName": "Pull B",
+          "exerciseCount": 5,
+          "programName": "PPL",
+          "webUrl": "https://jim.example.com/routines/r_pull"
+        },
+        {
+          "date": "2026-11-08",
+          "routineId": "r_legs",
+          "routineName": "Legs",
+          "exerciseCount": 5,
+          "programName": null,
+          "webUrl": "https://jim.example.com/routines/r_legs"
+        }
+      ],
+      "next": {
+        "routineId": "r_push",
+        "routineName": "Push A",
+        "date": "2026-11-04",
+        "webUrl": "https://jim.example.com/routines/r_push"
+      }
+    },
+    "dpr": {
+      "block": {
+        "name": "Strength Block A",
+        "week": 3,
+        "weeks": 8,
+        "lifts": [
+          {
+            "exerciseId": "ex_squat",
+            "name": "Squat",
+            "unit": "lb",
+            "next": {
+              "weight": 275,
+              "reps": 5,
+              "intensity": 0.82
+            },
+            "e1rm": 335,
+            "goal": 350,
+            "lastDecision": "progress"
+          },
+          {
+            "exerciseId": "ex_bench",
+            "name": "Bench Press",
+            "unit": "lb",
+            "next": {
+              "weight": 185,
+              "reps": 5,
+              "intensity": 0.8
+            },
+            "e1rm": 230,
+            "goal": 245,
+            "lastDecision": "hold"
+          },
+          {
+            "exerciseId": "ex_dead",
+            "name": "Deadlift",
+            "unit": "lb",
+            "next": {
+              "weight": 315,
+              "reps": 3,
+              "intensity": null
+            },
+            "e1rm": 405,
+            "goal": 420,
+            "lastDecision": "deload"
+          }
+        ]
+      }
+    }
+  },
+  "fetchedAt": "2026-11-03T22:41:09Z",
+  "stale": false
+}

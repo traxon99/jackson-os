@@ -19,7 +19,7 @@ The design mockup (desktop, phone, and widget states) lives in the project's des
 | `apps/web/src/styles/base.css`           | PWA viewport rules from Jim (see [PWA.md](PWA.md)). Don't restyle here.                          |
 | `apps/web/src/shell/AppShell.tsx`        | The top bar, command bar (⌘K), side nav with live source health, and status line.                |
 | `apps/web/src/dashboard/WidgetFrame.tsx` | The widget header and the loading, ok/stale, error and disabled states.                          |
-| `apps/web/src/ui/primitives.tsx`         | `Tag`, `StatusDot`, `Sparkline`, `Meter`, `Stat`, `Kbd`.                                         |
+| `apps/web/src/ui/primitives.tsx`         | `Tag`, `StatusDot`, `Sparkline`, `Meter`, `Stat`, `Kbd`, `Rows`, `Row`, `Delta`.                 |
 | `apps/web/src/assets/fonts/paper-mono/`  | The self-hosted Paper Mono variable font (weights 300–700) and its OFL license.                  |
 
 ## Tokens
@@ -64,7 +64,21 @@ View: ({ data }) => (
 Rules of thumb:
 
 - Put the number first and the label after it. Use the `t-label` class for small uppercase labels.
-- For tables of rows, use CSS grid with `--row-pad` and dashed `--line` separators. Keep cells on one line and truncate with an ellipsis.
+- For tables of rows, use the `Rows` and `Row` primitives with CSS grid, `--row-pad`, and dashed `--line` separators. Keep cells on one line and truncate with an ellipsis.
+
+```tsx
+import { Row, Rows } from '../../ui/primitives.js';
+
+<Rows columns="auto 1fr auto" label="Recent workouts">
+  <Row href={workout.webUrl}>
+    <span className="t-label">{workout.startedAt}</span>
+    <span>{workout.name}</span>
+    <span>{workout.durationMinutes}m</span>
+  </Row>
+</Rows>;
+```
+
+- Use `Delta` for “this vs last” (`▲ 12%`, `▼ 3%`, `= 0%`, or `new`). Set `goodWhen` to `'up'` or `'down'` so the tone matches what “better” means for that metric.
 - Charts are inline SVG in `--accent`, with no axes unless they are needed. Give them a `label` when they carry meaning on their own.
 - Header actions (`actions` on the widget) are small text buttons, like `run noop`. Real actions go through `POST /api/actions/...`.
 - The CSP is `style-src 'self'`: React `style={{…}}` props are fine (they go through the CSSOM), but don't add `<style>` tags or style attributes in HTML strings, and don't load fonts from a CDN.

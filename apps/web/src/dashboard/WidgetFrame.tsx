@@ -1,5 +1,5 @@
 import { relativeTime, type WidgetPayload } from '@jos/core';
-import type { ReactNode } from 'react';
+import { type ComponentType, createElement, type ReactNode } from 'react';
 import { Tag } from '../ui/primitives.js';
 import { useNow } from './useNow.js';
 
@@ -11,7 +11,7 @@ export type WidgetFrameProps<T> = {
   isLoading: boolean;
   onRetry: () => void;
   actions?: ReactNode;
-  children: (data: T) => ReactNode;
+  View: ComponentType<{ data: T }>;
 };
 
 /**
@@ -26,7 +26,7 @@ export function WidgetFrame<T>({
   isLoading,
   onRetry,
   actions,
-  children,
+  View,
 }: WidgetFrameProps<T>) {
   const now = useNow();
   const state = payload?.state ?? (isLoading ? 'loading' : 'empty');
@@ -78,13 +78,15 @@ export function WidgetFrame<T>({
             </div>
             {payload.lastGood ? (
               <div className="wf__last-good">
-                {children(payload.lastGood.data)}
+                {createElement(View, { data: payload.lastGood.data })}
               </div>
             ) : null}
           </>
         ) : null}
 
-        {payload?.state === 'ok' ? children(payload.data) : null}
+        {payload?.state === 'ok'
+          ? createElement(View, { data: payload.data })
+          : null}
       </div>
     </article>
   );

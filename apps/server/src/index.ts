@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
-import { createRegistry, registerDemo } from '@jos/core';
+import { createRegistry, registerDemo, registerJim } from '@jos/core';
 import { closeDb, openDb, runMigrations } from '@jos/db';
 import { createApp } from './app.js';
 import {
@@ -43,6 +43,7 @@ runMigrations(dbConn.db);
 
 const registry = createRegistry();
 registerDemo(registry);
+registerJim(registry);
 
 const store = createSnapshotStore(dbConn.db);
 const now = () => Date.now();

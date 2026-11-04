@@ -1,4 +1,4 @@
-import { demoWidgets } from '@jos/core';
+import { demoWidgets, jimWidgets } from '@jos/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { type Layout, Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -34,7 +34,10 @@ export function Dashboard() {
   const titles = useMemo(
     () =>
       Object.fromEntries(
-        demoWidgets.map((widget) => [widget.id, widget.title]),
+        [...demoWidgets, ...jimWidgets].map((widget) => [
+          widget.id,
+          widget.title,
+        ]),
       ),
     [],
   );

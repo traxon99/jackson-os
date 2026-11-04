@@ -445,6 +445,28 @@ a.sidenav__link:hover {
   color: var(--text-mute);
 }
 
+.rows {
+  display: grid;
+}
+
+.rows__row {
+  display: contents;
+}
+
+.rows__cell {
+  padding: var(--row-pad) 0;
+  border-bottom: 1px dashed var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rows__row:last-child .rows__cell {
+  border-bottom: 0;
+}
+
 /* ---------- Demo widgets ---------- */
 
 .demo-clock {

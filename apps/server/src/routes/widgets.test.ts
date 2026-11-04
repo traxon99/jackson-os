@@ -1,6 +1,7 @@
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AdapterContext, DemoConfig } from '@jos/core';
+import { registerJim } from '@jos/core';
 import { closeDb } from '@jos/db';
 import { describe, expect, it } from 'vitest';
 import {
@@ -63,6 +64,24 @@ describe('GET /api/widgets/:widgetId', () => {
       expect(b.status).toBe(200);
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(fetchCount).toBe(1);
+    } finally {
+      destroyTestStack(stack);
+    }
+  });
+
+  it('returns disabled when the source is off', async () => {
+    const webDist = await tempWebDist();
+    const stack = createTestStack({
+      WEB_DIST: webDist,
+      setupRegistry: registerJim,
+      enabled: (sourceId) => sourceId === 'demo',
+    });
+    try {
+      const response = await stack.app.request('/api/widgets/jim.status', {
+        headers: testSessionHeaders,
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ state: 'disabled' });
     } finally {
       destroyTestStack(stack);
     }

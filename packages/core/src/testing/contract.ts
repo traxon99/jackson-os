@@ -4,6 +4,7 @@ import type { AdapterContext, Logger, SourceAdapter } from '../contracts.js';
 export type RunAdapterContractOptions<TConfig> = {
   config: TConfig;
   secrets: readonly string[];
+  fetch?: typeof fetch;
 };
 
 function createTestContext<TConfig>(
@@ -17,7 +18,7 @@ function createTestContext<TConfig>(
   };
   return {
     config: options.config,
-    fetch: globalThis.fetch,
+    fetch: options.fetch ?? globalThis.fetch,
     log,
     now: () => new Date('2026-01-01T12:00:00.000Z'),
     signal,
