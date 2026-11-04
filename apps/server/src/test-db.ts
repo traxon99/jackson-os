@@ -1,15 +1,16 @@
-import { closeDb, type DbConnection, openTestDb, runMigrations } from '@jos/db';
+import type { TestDbConnection } from '@jos/db/test';
+import { closeTestDb, openTestDb, runTestMigrations } from '@jos/db/test';
 
 export async function createTestConn(): Promise<{
-  conn: DbConnection;
+  conn: TestDbConnection;
   cleanup: () => Promise<void>;
 }> {
   const conn = await openTestDb();
-  await runMigrations(conn);
+  await runTestMigrations(conn);
   return {
     conn,
     cleanup: async () => {
-      await closeDb(conn);
+      await closeTestDb(conn);
     },
   };
 }

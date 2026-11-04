@@ -9,6 +9,12 @@
       "development": "./src/index.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./test": {
+      "types": "./src/open-test.ts",
+      "development": "./src/open-test.ts",
+      "import": "./dist/open-test.js",
+      "default": "./dist/open-test.js"
     }
   },
   "types": "./src/index.ts",
@@ -18,11 +24,11 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.8",
     "drizzle-orm": "^0.41.0",
     "postgres": "^3.4.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.8",
     "@types/node": "^22.14.0",
     "drizzle-kit": "^0.30.4",
     "typescript": "^5.8.3"

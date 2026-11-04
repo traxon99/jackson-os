@@ -14,7 +14,12 @@ describe('admin reset-auth', () => {
 
   it('clears credentials, sessions, recovery codes, and setup_token_used', async () => {
     const { conn, cleanup } = await createTestConn();
-    vi.spyOn(dbModule, 'openDb').mockResolvedValue(conn);
+    vi.spyOn(dbModule, 'openDb').mockResolvedValue({
+      kind: 'postgres',
+      sql: {} as never,
+      db: conn.db,
+    });
+    vi.spyOn(dbModule, 'runMigrations').mockResolvedValue(undefined);
     vi.spyOn(dbModule, 'closeDb').mockResolvedValue(undefined);
 
     try {

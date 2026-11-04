@@ -6,12 +6,14 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
-RUN pnpm deploy --filter server --prod /out
+RUN pnpm deploy --filter server --prod /out --config.auto-install-peers=false
 RUN cd /out && node -e "import('@jos/core').then(()=>process.exit(0)).catch((e)=>{console.error(e);process.exit(1)})"
 RUN mkdir -p /out/web && cp -r apps/web/dist /out/web/dist
 RUN cp -r packages/db/drizzle /out/node_modules/@jos/db/drizzle
-RUN find /out/node_modules -type f \( -name '*.md' -o -name '*.markdown' -o -name 'LICENSE*' -o -name 'CHANGELOG*' -o -name '*.map' \) -delete \
-  && find /out/node_modules -type d \( -name test -o -name tests -o -name __tests__ -o -name docs \) -prune -exec rm -rf {} +
+RUN find /out/node_modules -type f \( -name '*.md' -o -name '*.markdown' -o -name 'LICENSE*' -o -name 'CHANGELOG*' -o -name '*.map' -o -name '*.d.ts' \) -delete \
+  && find /out/node_modules -type d \( -name test -o -name tests -o -name __tests__ -o -name docs \) -prune -exec rm -rf {} + \
+  && rm -rf /out/node_modules/.pnpm/@node-rs+argon2-linux-x64-musl@* \
+  && rm -rf /out/node_modules/.pnpm/*pglite* /out/node_modules/.pnpm/*better-sqlite3* 2>/dev/null || true
 
 FROM node:22-slim AS runtime
 ENV PORT=8080 \
