@@ -65,8 +65,6 @@ describe('jim plan', () => {
       { days: 30 },
     );
 
-    expect(fetchUrl(fetchImpl)).toBe(
-      'https://jim.example.com/v1/plan?days=14',
-    );
+    expect(fetchUrl(fetchImpl)).toBe('https://jim.example.com/v1/plan?days=14');
   });
 });

@@ -183,15 +183,6 @@ a.sidenav__link:hover {
   border-color: var(--accent);
 }
 
-.is-editing .wf {
-  outline: 1px dashed var(--accent);
-  outline-offset: -1px;
-}
-
-.is-editing .wf__body {
-  opacity: 0.55;
-}
-
 .phone-layout {
   display: flex;
   flex-direction: column;
@@ -266,6 +257,15 @@ a.sidenav__link:hover {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+}
+
+.is-editing .wf {
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+
+.is-editing .wf__body {
+  opacity: 0.55;
 }
 
 .wf__skeleton {
