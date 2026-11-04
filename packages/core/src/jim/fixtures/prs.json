@@ -1,0 +1,36 @@
+{
+  "prs": [
+    {
+      "exerciseId": "ex_bench",
+      "exerciseName": "Bench Press",
+      "kind": "e1rm",
+      "value": 225,
+      "unit": "lb",
+      "previousValue": 220,
+      "achievedAt": "2026-11-03T19:00:00Z",
+      "workoutId": "w1",
+      "tier": "intermediate"
+    },
+    {
+      "exerciseId": "ex_squat",
+      "exerciseName": "Squat",
+      "kind": "e1rm",
+      "value": 315,
+      "unit": "lb",
+      "previousValue": null,
+      "achievedAt": "2026-10-15T12:00:00Z",
+      "workoutId": "w0"
+    },
+    {
+      "exerciseId": "ex_dead",
+      "exerciseName": "Deadlift",
+      "kind": "e1rm",
+      "value": 405,
+      "unit": "lb",
+      "previousValue": 395,
+      "achievedAt": "2026-09-20T18:00:00Z",
+      "workoutId": "w9",
+      "tier": "advanced"
+    }
+  ]
+}
