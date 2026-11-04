@@ -1,0 +1,34 @@
+{
+  "scheduled": [
+    {
+      "date": "2026-11-04",
+      "routineId": "r_push",
+      "routineName": "Push A",
+      "exerciseCount": 6,
+      "programName": "PPL",
+      "webUrl": "https://jim.example.com/routines/r_push"
+    },
+    {
+      "date": "2026-11-06",
+      "routineId": "r_pull",
+      "routineName": "Pull B",
+      "exerciseCount": 5,
+      "programName": "PPL",
+      "webUrl": "https://jim.example.com/routines/r_pull"
+    },
+    {
+      "date": "2026-11-08",
+      "routineId": "r_legs",
+      "routineName": "Legs",
+      "exerciseCount": 5,
+      "programName": null,
+      "webUrl": "https://jim.example.com/routines/r_legs"
+    }
+  ],
+  "next": {
+    "routineId": "r_push",
+    "routineName": "Push A",
+    "date": "2026-11-04",
+    "webUrl": "https://jim.example.com/routines/r_push"
+  }
+}
