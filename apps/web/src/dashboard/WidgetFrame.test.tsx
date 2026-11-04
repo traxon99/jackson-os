@@ -8,6 +8,18 @@ vi.mock('./useNow.js', () => ({
 
 import { WidgetFrame } from './WidgetFrame.js';
 
+function ValueView({ data }: { data: { value: number } }) {
+  return <p>{data.value}</p>;
+}
+
+function ValueLabelView({ data }: { data: { value: number } }) {
+  return <p>Value: {data.value}</p>;
+}
+
+function LastValueView({ data }: { data: { value: number } }) {
+  return <p>Last: {data.value}</p>;
+}
+
 describe('WidgetFrame', () => {
   it('shows a skeleton while loading without payload', () => {
     render(
@@ -15,9 +27,8 @@ describe('WidgetFrame', () => {
         title="Test widget"
         isLoading
         onRetry={() => {}}
-      >
-        {(data) => <p>{data.value}</p>}
-      </WidgetFrame>,
+        View={ValueView}
+      />,
     );
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
@@ -36,9 +47,8 @@ describe('WidgetFrame', () => {
           fetchedAt: '2026-06-01T12:00:00.000Z',
           stale: true,
         }}
-      >
-        {(data) => <p>Value: {data.value}</p>}
-      </WidgetFrame>,
+        View={ValueLabelView}
+      />,
     );
 
     expect(screen.getByText('Value: 42')).toBeInTheDocument();
@@ -63,9 +73,8 @@ describe('WidgetFrame', () => {
             fetchedAt: '2026-06-01T11:00:00.000Z',
           },
         }}
-      >
-        {(data) => <p>Last: {data.value}</p>}
-      </WidgetFrame>,
+        View={LastValueView}
+      />,
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent('fetch failed');
@@ -81,9 +90,8 @@ describe('WidgetFrame', () => {
         isLoading={false}
         onRetry={() => {}}
         payload={{ state: 'disabled' }}
-      >
-        {() => null}
-      </WidgetFrame>,
+        View={() => null}
+      />,
     );
 
     expect(screen.getByText('Not configured')).toBeInTheDocument();

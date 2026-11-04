@@ -56,16 +56,16 @@ Fly.io deployment (volume, secrets, `fly.toml`) is documented in [docs/HOSTING.m
 
 Values below are typical; optional integration tokens behave the same in every mode when set.
 
-| Variable                                  | Dev                                       | Compose                                           | Fly                                                       |
-| ----------------------------------------- | ----------------------------------------- | ------------------------------------------------- | --------------------------------------------------------- |
-| `NODE_ENV`                                | `development`                             | `production` (image default)                      | `production`                                              |
-| `PORT`                                    | `8080` (API)                              | `8080`                                            | `8080`                                                    |
-| `APP_ORIGIN`                              | `http://localhost:5173`                   | `http://localhost:8080`                           | Public HTTPS URL (see [docs/HOSTING.md](docs/HOSTING.md)) |
-| `WEB_DIST`                                | `../web/dist` (server package relative)   | `/out/web/dist` (image)                           | Same as Compose image                                     |
-| `DATA_DIR`                                | Local path (e.g. `./data`)                | `/data` (named volume)                            | Fly volume mount at `/data`                               |
-| `RP_ID`                                   | Hostname from `.env` (default in example) | Default (`os.jacksonyanek.com`) unless overridden | Production WebAuthn RP ID                                 |
-| `SETUP_TOKEN`                             | Optional env var                          | Via `SETUP_TOKEN_FILE=/run/secrets/setup_token`   | Platform secrets (see hosting doc)                        |
-| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional env vars                         | Optional env vars on `app` service                | Optional Fly secrets                                      |
+| Variable                                                 | Dev                                       | Compose                                           | Fly                                                       |
+| -------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------- | --------------------------------------------------------- |
+| `NODE_ENV`                                               | `development`                             | `production` (image default)                      | `production`                                              |
+| `PORT`                                                   | `8080` (API)                              | `8080`                                            | `8080`                                                    |
+| `APP_ORIGIN`                                             | `http://localhost:5173`                   | `http://localhost:8080`                           | Public HTTPS URL (see [docs/HOSTING.md](docs/HOSTING.md)) |
+| `WEB_DIST`                                               | `../web/dist` (server package relative)   | `/out/web/dist` (image)                           | Same as Compose image                                     |
+| `DATA_DIR`                                               | Local path (e.g. `./data`)                | `/data` (named volume)                            | Fly volume mount at `/data`                               |
+| `RP_ID`                                                  | Hostname from `.env` (default in example) | Default (`os.jacksonyanek.com`) unless overridden | Production WebAuthn RP ID                                 |
+| `SETUP_TOKEN`                                            | Optional env var                          | Via `SETUP_TOKEN_FILE=/run/secrets/setup_token`   | Platform secrets (see hosting doc)                        |
+| `JIM_PAT`, `JIM_API_URL`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional env vars                         | Optional env vars on `app` service                | Optional Fly secrets                                      |
 
 Copy [.env.example](.env.example) for local development; Compose and Fly set production values in `deploy/` or the host platform instead.
 
