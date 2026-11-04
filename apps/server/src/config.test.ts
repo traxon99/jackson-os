@@ -97,6 +97,7 @@ describe('loadConfig', () => {
       DATA_DIR: '/data',
       RP_ID: 'os.jacksonyanek.com',
       SETUP_TOKEN: undefined,
+      JIM_API_URL: 'https://jim-mcp.fly.dev',
       JIM_PAT: undefined,
       GITHUB_TOKEN: undefined,
       CLOUDFLARE_API_TOKEN: undefined,

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createRegistry, type SourceAdapter } from '@jos/core';
+import { createRegistry, type SourceAdapter, UpstreamError } from '@jos/core';
 import { closeDb, openDb, runMigrations } from '@jos/db';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -48,10 +48,14 @@ describe('createScheduler', () => {
 
     let shouldFail = true;
     const runner: DatasetRunner = {
-      run: async (source, datasetKey) => {
+      run: async (
+        source,
+        datasetKey,
+        _config,
+      ): Promise<{ retryAfterMs?: number } | undefined> => {
         if (shouldFail) {
           store.putError(source.id, datasetKey, 'fail');
-          return;
+          return undefined;
         }
         store.putOk(
           source.id,
@@ -60,6 +64,7 @@ describe('createScheduler', () => {
           Date.now(),
           Date.now() + 2000,
         );
+        return undefined;
       },
     };
 
@@ -94,6 +99,68 @@ describe('createScheduler', () => {
       shouldFail = false;
       await vi.advanceTimersByTimeAsync(everyMs * 8);
       expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(everyMs);
+    } finally {
+      scheduler.stop();
+      closeDb(conn);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('honors Retry-After via UpstreamError retryAfterMs', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const dir = mkdtempSync(join(tmpdir(), 'jos-scheduler-retry-'));
+    const conn = openDb(join(dir, 'test.db'));
+    runMigrations(conn.db);
+    const store = createSnapshotStore(conn.db);
+    store.putOk('demo', 'main', { ok: true }, 0, 0);
+
+    const registry = createRegistry();
+    registry.registerSource({
+      id: 'demo',
+      displayName: 'Demo',
+      configSchema: z.object({}),
+      datasets: {
+        main: {
+          schema: z.object({ ok: z.boolean() }),
+          refresh: { everyMs, staleAfterMs: 2000 },
+          fetch: async () => {
+            throw new UpstreamError('rate limited', {
+              status: 429,
+              retryAfterMs: 180_000,
+            });
+          },
+        },
+      },
+    });
+
+    const runner: DatasetRunner = {
+      run: async (source, datasetKey, _config) => {
+        store.putError(source.id, datasetKey, 'upstream 429 · retry in 3m');
+        return { retryAfterMs: 180_000 };
+      },
+    };
+
+    const scheduler = createScheduler({
+      registry,
+      runner,
+      store,
+      enabled: () => true,
+      random: () => 0.5,
+      now: () => Date.now(),
+      getSourceConfig: () => ({}),
+    });
+
+    try {
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(everyMs);
+
+      expect(scheduler.getLastScheduledBaseDelay('demo', 'main')).toBe(180_000);
+
+      const nextAt = scheduler.getNextFetchAt('demo');
+      expect(nextAt).not.toBeNull();
+      expect(nextAt).toBeGreaterThanOrEqual(Date.now() + 180_000 - 1000);
     } finally {
       scheduler.stop();
       closeDb(conn);

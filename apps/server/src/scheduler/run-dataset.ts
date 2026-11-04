@@ -1,4 +1,5 @@
 import type { Logger, SourceAdapter } from '@jos/core';
+import { formatUpstreamError, UpstreamError } from '@jos/core';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { writeMetricPoints } from '../data/metrics.js';
 import type { SnapshotStore } from '../data/snapshots.js';
@@ -14,13 +15,16 @@ export function createRunner(deps: {
   now: () => number;
   fetchImpl: typeof fetch;
 }) {
-  const inflight = new Map<string, Promise<void>>();
+  const inflight = new Map<
+    string,
+    Promise<{ retryAfterMs?: number } | undefined>
+  >();
 
   async function run<TConfig>(
     source: SourceAdapter<TConfig>,
     datasetKey: string,
     config: TConfig,
-  ): Promise<void> {
+  ): Promise<{ retryAfterMs?: number } | undefined> {
     const flightKey = `${source.id}:${datasetKey}`;
     const existing = inflight.get(flightKey);
     if (existing !== undefined) {
@@ -38,7 +42,7 @@ export function createRunner(deps: {
     source: SourceAdapter<TConfig>,
     datasetKey: string,
     config: TConfig,
-  ): Promise<void> {
+  ): Promise<{ retryAfterMs?: number } | undefined> {
     const dataset = source.datasets[datasetKey];
     if (dataset === undefined) {
       throw new Error(`unknown dataset: ${datasetKey}`);
@@ -68,6 +72,15 @@ export function createRunner(deps: {
 
       deps.store.putOk(source.id, datasetKey, data, fetchedAt, expiresAt);
     } catch (error) {
+      if (error instanceof UpstreamError) {
+        const message = formatUpstreamError(error, new Date(deps.now()));
+        deps.log.error(
+          { err: error, sourceId: source.id, datasetKey },
+          message,
+        );
+        deps.store.putError(source.id, datasetKey, message);
+        return { retryAfterMs: error.retryAfterMs };
+      }
       const message =
         error instanceof Error ? error.message : 'dataset fetch failed';
       deps.log.error({ err: error, sourceId: source.id, datasetKey }, message);

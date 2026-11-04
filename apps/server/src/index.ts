@@ -18,6 +18,7 @@ import { createLogger } from './log.js';
 import { createAuthServices } from './routes/mount-auth.js';
 import { createRunner } from './scheduler/run-dataset.js';
 import { createScheduler } from './scheduler/scheduler.js';
+import { sourceConfigs } from './sources.js';
 
 const logger = createLogger({ secrets: SECRET_KEYS });
 
@@ -76,7 +77,7 @@ function getSourceConfig(sourceId: string): unknown {
   if (source === undefined) {
     return {};
   }
-  return source.configSchema.parse({});
+  return source.configSchema.parse(sourceConfigs(config)[sourceId] ?? {});
 }
 
 const scheduler = createScheduler({
