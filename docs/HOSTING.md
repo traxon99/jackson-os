@@ -1,10 +1,10 @@
 # Hosting
 
-jackson-os runs in three modes (see [README](../README.md)): local dev, Docker Compose (homelab), and **Vercel + Supabase Postgres** (production). Fly.io + SQLite was the previous Phase 1; those files remain under `deploy/` for rollback reference but are **deprecated** for new deploys.
+jackson-os runs on this machine. Local development uses `pnpm dev`. Production is the Docker Compose stack in [`deploy/compose.yaml`](../deploy/compose.yaml), with **Supabase Postgres** as the database. GitHub Actions checks the code and does not deploy.
 
-## Phase 1 — Vercel + Supabase (production)
+Fly.io + SQLite never became a stable production host; those files stay under `deploy/` for rollback only. A Vercel deploy (serverless API plus Cron) was removed so the SPA, API, and in-process scheduler stay one long-running Node process on this machine.
 
-### Supabase project
+## Database — Supabase
 
 Use the dedicated **`jackson-os`** project (Traxa 99 / traxon99 org), **public schema only**:
 
@@ -17,7 +17,7 @@ Use the dedicated **`jackson-os`** project (Traxa 99 / traxon99 org), **public s
 
 No tables from the Jim app live in this project. All jackson-os Drizzle migrations target `public` on this empty project.
 
-#### One-time database setup
+### One-time database setup
 
 After the project is `ACTIVE_HEALTHY`, apply migrations (from a machine with `DATABASE_URL` set to the Supabase **direct** or **session** connection string):
 
@@ -35,50 +35,45 @@ node --input-type=module -e "
 
 Alternatively, run the SQL in [`packages/db/drizzle/0000_initial.sql`](../packages/db/drizzle/0000_initial.sql) in the Supabase SQL editor.
 
-### Vercel project
+The long-running server can use the session, direct, or transaction pooler URI. The driver already sets `prepare: false`.
 
-1. Create or link a Vercel project for this GitHub repo (monorepo root; `vercel.json` at repo root).
-2. Set **Production** environment variables (Settings → Environment Variables):
+## Production — this machine
 
-| Variable                                  | Required     | Notes                                                                                                                   |
-| ----------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                            | Yes          | Supabase **transaction pooler** URI for serverless (`prepare: false` in code). Session/direct URL for local `pnpm dev`. |
-| `APP_ORIGIN`                              | Yes          | Public HTTPS origin, e.g. `https://os.jacksonyanek.com`                                                                 |
-| `RP_ID`                                   | Yes          | WebAuthn RP ID (hostname only), e.g. `os.jacksonyanek.com`                                                              |
-| `SETUP_TOKEN`                             | First deploy | ≥32 chars; one-time setup                                                                                               |
-| `CRON_SECRET`                             | Yes (prod)   | ≥16 chars; Vercel Cron sends `Authorization: Bearer …` to `/api/cron/tick`                                              |
-| `TRUST_CLOUDFLARE`                        | Recommended  | `true` when behind Cloudflare proxy                                                                                     |
-| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional     | Same as local                                                                                                           |
+1. Copy secrets and set `DATABASE_URL` (Supabase, or another Postgres you run yourself).
+2. `docker compose -f deploy/compose.yaml up -d --build`
+3. Optional public ingress: Cloudflare Tunnel (`--profile tunnel`).
 
-3. GitHub Actions deploy (optional): add secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` for [.github/workflows/deploy.yml](../.github/workflows/deploy.yml). Vercel Git integration alone also deploys on push to `main`.
+The app listens on port 8080. `APP_ORIGIN` must be the URL browsers use (`http://localhost:8080` on the machine, or the public HTTPS origin).
 
-### Architecture on Vercel
+### Environment variables
 
-- **Static web:** `apps/web/dist` (`outputDirectory` in `vercel.json`).
-- **API:** Hono via [`api/index.ts`](../api/index.ts) (`/api/*` rewrite).
-- **Background refresh:** In-process scheduler is **disabled** on Vercel (`VERCEL=1`). Vercel Cron hits `/api/cron/tick` every 5 minutes (see `vercel.json`).
+| Variable                                  | Required         | Notes                                                                                    |
+| ----------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                            | Yes              | Supabase session, direct, or pooler URI                                                  |
+| `APP_ORIGIN`                              | Yes              | Origin browsers use, e.g. `https://os.jacksonyanek.com` or `http://localhost:8080`       |
+| `RP_ID`                                   | Yes              | WebAuthn RP ID (hostname only), e.g. `os.jacksonyanek.com`                               |
+| `SETUP_TOKEN`                             | First start      | ≥32 chars; one-time setup. Compose reads `SETUP_TOKEN_FILE=/run/secrets/setup_token`     |
+| `CRON_SECRET`                             | No               | Optional bearer for `POST /api/cron/tick`. Dataset refresh uses the in-process scheduler |
+| `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS                                                    |
+| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional         | Same as local                                                                            |
 
-### Cloudflare DNS and TLS
+`DISABLE_SCHEDULER=true` turns the in-process scheduler off.
 
-Same as before: proxied CNAME to Vercel, SSL **Full (strict)**, WAF rate limits on `/api/auth/*`.
+### Architecture
 
-### Deprecated — Fly.io + SQLite
+- One container runs the Hono server, serves the built SPA (`WEB_DIST`, `/out/web/dist` in the image), and starts the in-process scheduler.
+- No platform cron and no GitHub Actions deploy. Build and start the image on this machine.
+- Public hostname: Cloudflare Tunnel, SSL **Full (strict)**, WAF rate limits on `/api/auth/*`.
+
+Backups: Supabase backups and/or `pg_dump` from a trusted host with `DATABASE_URL`.
+
+## CI
+
+Pushes and pull requests run [.github/workflows/ci.yml](../.github/workflows/ci.yml): lint, typecheck, test, build, and the web-bundle secret scan. That workflow does not build a deploy image and does not publish anywhere.
+
+## Deprecated — Fly.io + SQLite
 
 [`deploy/fly.toml`](../deploy/fly.toml) and the Fly volume workflow are kept for rollback only. The Fly app had no production SQLite data to migrate.
-
-## Phase 2 — Homelab migration (Compose + tunnel)
-
-Goal: run the same container image with **Postgres** (`DATABASE_URL`) instead of a local SQLite file.
-
-1. Copy secrets and set `DATABASE_URL` (can point at Supabase or a local Postgres).
-2. `docker compose -f deploy/compose.yaml up -d --build`
-3. Ingress via Cloudflare Tunnel (`--profile tunnel`) as before.
-
-Backups: use Supabase backups / `pg_dump` — the old SQLite `VACUUM INTO` helper was removed.
-
-## Deploy automation
-
-Pushes to `main` run CI, then [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) deploys to Vercel when secrets are configured.
 
 ## Related docs
 

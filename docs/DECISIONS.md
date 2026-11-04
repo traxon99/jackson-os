@@ -262,20 +262,21 @@ Foundation packages should remain portable so hosting, auth vendors, and analyti
 
 None — the rules exist specifically to keep migration to homelab a deploy/config exercise.
 
-## ADR-008 — Production Postgres (Supabase) and Vercel
+## ADR-008 — Production Postgres (Supabase) on this machine
 
 ### Context
 
-Fly.io + SQLite never reached a stable production state (empty volume, boot issues). Jackson already uses Supabase for Jim; a **dedicated** `jackson-os` Supabase project isolates schema in `public` without touching Jim tables. Vercel is already connected for frontend work.
+Fly.io + SQLite never reached a stable production state (empty volume, boot issues). Jackson already uses Supabase for Jim; a **dedicated** `jackson-os` Supabase project isolates schema in `public` without touching Jim tables. A Vercel host (static SPA, serverless Hono entry, platform Cron) was tried and removed: the app runs on this machine so one Node process can serve the SPA and run the in-process scheduler.
 
 ### Decision
 
-- **Database:** Drizzle ORM on **Postgres** (`postgres` driver + Supabase pooler in production). Migrations in `packages/db/drizzle/` target the dedicated Supabase project (`nsonjougvktiqlzvvyqw`).
-- **Hosting:** **Vercel** serves `apps/web/dist` and runs the Hono API via `api/index.ts`. Dataset refresh on Vercel uses **Cron** (`/api/cron/tick`) instead of an in-process scheduler.
+- **Database:** Drizzle ORM on **Postgres** (`postgres` driver). Migrations in `packages/db/drizzle/` target the dedicated Supabase project (`nsonjougvktiqlzvvyqw`). Session, direct, and pooler URIs are all valid (`prepare: false`).
+- **Hosting:** Docker Compose on this machine. The container serves the built SPA and the Hono API and starts the in-process scheduler. GitHub Actions does not deploy.
 - **Fly + SQLite:** Deprecated; `deploy/fly.toml` retained for rollback only.
+- **Vercel:** Not used. No project config, serverless entry, or deploy workflow.
 
 ### Consequences
 
 - `DATABASE_URL` is required everywhere the server runs (except tests using `pglite:` or PGlite via `openTestDb`).
 - Local dev and CI unit tests use **PGlite**; production uses Supabase.
-- Compose homelab runs the same image with `DATABASE_URL` instead of a SQLite volume.
+- Compose on this machine is the production runtime, with `DATABASE_URL` instead of a SQLite volume.
