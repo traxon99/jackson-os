@@ -31,7 +31,7 @@ export function createWidgetsRoutes(deps: WidgetRoutesDeps): Hono {
       return c.json({ error: 'Not Found' }, 404);
     }
 
-    const row = deps.store.get(widget.source, widget.dataset);
+    const row = await deps.store.get(widget.source, widget.dataset);
     const payload = deps.store.toWidgetPayload(row, deps.now());
 
     if (payload === undefined) {
@@ -40,7 +40,7 @@ export function createWidgetsRoutes(deps: WidgetRoutesDeps): Hono {
         widget.dataset,
         deps.getSourceConfig(widget.source),
       );
-      const after = deps.store.get(widget.source, widget.dataset);
+      const after = await deps.store.get(widget.source, widget.dataset);
       const fresh = deps.store.toWidgetPayload(after, deps.now());
       return c.json(fresh ?? { state: 'error', error: 'fetch failed' });
     }

@@ -148,9 +148,7 @@ describe('POST /api/auth/recover', () => {
         body: JSON.stringify({ response: { id: 'cred-id' } }),
       });
       expect(verify.status).toBe(200);
-      expect(
-        await stack.conn.db.select().from(sessionsTable),
-      ).toHaveLength(1);
+      expect(await stack.conn.db.select().from(sessionsTable)).toHaveLength(1);
     } finally {
       await destroyTestStack(stack);
     }

@@ -7,9 +7,8 @@ services:
       - "8080:8080"
     environment:
       APP_ORIGIN: http://localhost:8080
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to a Postgres connection string}
       SETUP_TOKEN_FILE: /run/secrets/setup_token
-    volumes:
-      - jos-data:/data
     secrets:
       - setup_token
 
@@ -30,6 +29,3 @@ secrets:
     file: ./secrets/setup_token
   tunnel_token:
     file: ./secrets/tunnel_token
-
-volumes:
-  jos-data:

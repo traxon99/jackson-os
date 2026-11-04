@@ -1,6 +1,5 @@
-export { backupNow, pruneBackups } from './backup.js';
 export { runMigrations } from './migrate.js';
-export { closeDb, type DbConnection, openDb } from './open.js';
+export { closeDb, type DbConnection, openDb, openTestDb } from './open.js';
 export {
   actionLog,
   meta,
@@ -12,3 +11,4 @@ export {
   webauthnCredentials,
   widgetLayout,
 } from './schema/index.js';
+export type { JosDatabase } from './types.js';

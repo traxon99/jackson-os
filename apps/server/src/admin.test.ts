@@ -1,12 +1,7 @@
+import * as dbModule from '@jos/db';
+import { meta, recoveryCodes, sessions, webauthnCredentials } from '@jos/db';
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as dbModule from '@jos/db';
-import {
-  meta,
-  recoveryCodes,
-  sessions,
-  webauthnCredentials,
-} from '@jos/db';
 import { resetAuth } from './admin.js';
 import { createTestConn } from './test-db.js';
 

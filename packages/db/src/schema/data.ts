@@ -1,33 +1,33 @@
 import {
+  bigint,
+  doublePrecision,
   index,
-  integer,
+  pgTable,
   primaryKey,
-  real,
-  sqliteTable,
   text,
-} from 'drizzle-orm/sqlite-core';
+} from 'drizzle-orm/pg-core';
 
-export const sourceSnapshots = sqliteTable(
+export const sourceSnapshots = pgTable(
   'source_snapshots',
   {
     sourceId: text('source_id').notNull(),
     key: text('key').notNull(),
     payload: text('payload').notNull(),
-    fetchedAt: integer('fetched_at').notNull(),
-    expiresAt: integer('expires_at'),
+    fetchedAt: bigint('fetched_at', { mode: 'number' }).notNull(),
+    expiresAt: bigint('expires_at', { mode: 'number' }),
     status: text('status').notNull(),
     error: text('error'),
   },
   (table) => [primaryKey({ columns: [table.sourceId, table.key] })],
 );
 
-export const metricPoints = sqliteTable(
+export const metricPoints = pgTable(
   'metric_points',
   {
     sourceId: text('source_id').notNull(),
     metric: text('metric').notNull(),
-    ts: integer('ts').notNull(),
-    value: real('value').notNull(),
+    ts: bigint('ts', { mode: 'number' }).notNull(),
+    value: doublePrecision('value').notNull(),
     dims: text('dims'),
   },
   (table) => [
@@ -39,27 +39,27 @@ export const metricPoints = sqliteTable(
   ],
 );
 
-export const widgetLayout = sqliteTable('widget_layout', {
+export const widgetLayout = pgTable('widget_layout', {
   id: text('id').primaryKey().notNull().default('default'),
   layout: text('layout').notNull(),
-  updatedAt: integer('updated_at').notNull(),
+  updatedAt: bigint('updated_at', { mode: 'number' }).notNull(),
 });
 
-export const actionLog = sqliteTable('action_log', {
+export const actionLog = pgTable('action_log', {
   id: text('id').primaryKey(),
   widgetId: text('widget_id').notNull(),
   action: text('action').notNull(),
   params: text('params').notNull(),
   result: text('result').notNull(),
-  createdAt: integer('created_at').notNull(),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
 });
 
-export const suggestions = sqliteTable('suggestions', {
+export const suggestions = pgTable('suggestions', {
   id: text('id').primaryKey(),
   project: text('project').notNull(),
   body: text('body').notNull(),
   inputsHash: text('inputs_hash').notNull(),
   model: text('model').notNull(),
   status: text('status', { enum: ['new', 'done', 'dismissed'] }).notNull(),
-  createdAt: integer('created_at').notNull(),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
 });

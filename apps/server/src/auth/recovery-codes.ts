@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
+import type { JosDatabase } from '@jos/db';
 import { recoveryCodes } from '@jos/db';
 import { hash, verify } from '@node-rs/argon2';
 import { eq, isNull } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 const CODE_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
 const CODE_COUNT = 10;
@@ -28,45 +28,42 @@ export type RecoveryCodesService = {
 };
 
 export function createRecoveryCodesService(
-  db: BetterSQLite3Database,
+  db: JosDatabase,
   now: () => number = () => Date.now(),
 ): RecoveryCodesService {
   async function generate(): Promise<string[]> {
-    db.delete(recoveryCodes).run();
+    await db.delete(recoveryCodes);
 
     const rawCodes: string[] = [];
     for (let i = 0; i < CODE_COUNT; i += 1) {
       const raw = formatRecoveryCode();
       rawCodes.push(raw);
       const codeHash = await hash(raw);
-      db.insert(recoveryCodes)
-        .values({
-          id: randomBytes(16).toString('hex'),
-          codeHash,
-          usedAt: null,
-        })
-        .run();
+      await db.insert(recoveryCodes).values({
+        id: randomBytes(16).toString('hex'),
+        codeHash,
+        usedAt: null,
+      });
     }
     return rawCodes;
   }
 
   async function consume(code: string): Promise<boolean> {
     const normalized = code.trim().toLowerCase();
-    const rows = db
+    const rows = await db
       .select()
       .from(recoveryCodes)
-      .where(isNull(recoveryCodes.usedAt))
-      .all();
+      .where(isNull(recoveryCodes.usedAt));
 
     for (const row of rows) {
       const matches = await verify(row.codeHash, normalized);
       if (!matches) {
         continue;
       }
-      db.update(recoveryCodes)
+      await db
+        .update(recoveryCodes)
         .set({ usedAt: now() })
-        .where(eq(recoveryCodes.id, row.id))
-        .run();
+        .where(eq(recoveryCodes.id, row.id));
       return true;
     }
     return false;

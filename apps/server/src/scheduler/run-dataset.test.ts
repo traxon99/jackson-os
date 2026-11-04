@@ -1,7 +1,7 @@
 import { type SourceAdapter, UpstreamError } from '@jos/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createTestConn } from '../test-db.js';
 import { createSnapshotStore } from '../data/snapshots.js';
+import { createTestConn } from '../test-db.js';
 import { createRunner } from './run-dataset.js';
 
 const stubLog = {

@@ -13,7 +13,7 @@ export function defaultGetSession(): GetSession {
 }
 
 export function createGetSession(
-  lookup: (token: string) => Session | null,
+  lookup: (token: string) => Promise<Session | null>,
   readToken: (c: Context) => string | undefined,
 ): GetSession {
   return async (c) => {
@@ -30,6 +30,7 @@ export function authGate(getSession: GetSession): MiddlewareHandler {
     const pathname = new URL(c.req.url).pathname;
     if (
       pathname === '/api/health' ||
+      pathname === '/api/cron/tick' ||
       pathname === '/api/auth' ||
       pathname.startsWith('/api/auth/')
     ) {

@@ -1,24 +1,39 @@
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
-import Database from 'better-sqlite3';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { PGlite } from '@electric-sql/pglite';
+import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema/index.js';
+import type { JosDatabase } from './types.js';
 
 export type DbConnection = {
-  sqlite: Database.Database;
-  db: BetterSQLite3Database;
+  kind: 'postgres' | 'pglite';
+  sql?: postgres.Sql;
+  client?: PGlite;
+  db: JosDatabase;
 };
 
-export function openDb(path: string): DbConnection {
-  mkdirSync(dirname(path), { recursive: true });
-  const sqlite = new Database(path);
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
-  sqlite.pragma('busy_timeout = 5000');
-  const db = drizzle(sqlite);
-  return { sqlite, db };
+export async function openDb(databaseUrl: string): Promise<DbConnection> {
+  const sql = postgres(databaseUrl, {
+    prepare: false,
+    max: process.env.VERCEL === '1' ? 1 : 10,
+  });
+  const db = drizzle(sql, { schema });
+  return { kind: 'postgres', sql, db };
 }
 
-export function closeDb(conn: DbConnection): void {
-  conn.sqlite.close();
+/** In-memory Postgres for unit tests (PGlite). */
+export async function openTestDb(): Promise<DbConnection> {
+  const client = new PGlite();
+  const db = drizzlePglite(client, { schema });
+  return { kind: 'pglite', client, db };
+}
+
+export async function closeDb(conn: DbConnection): Promise<void> {
+  if (conn.kind === 'postgres' && conn.sql !== undefined) {
+    await conn.sql.end({ timeout: 5 });
+    return;
+  }
+  if (conn.client !== undefined) {
+    await conn.client.close();
+  }
 }

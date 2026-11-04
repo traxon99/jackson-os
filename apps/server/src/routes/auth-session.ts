@@ -16,7 +16,7 @@ export function mountAuthSessionRoutes(api: Hono, deps: AuthSessionDeps): void {
   api.post('/auth/signout', async (c) => {
     const token = readSessionToken(c);
     if (token !== undefined) {
-      deps.sessions.revoke(token);
+      await deps.sessions.revoke(token);
     }
     clearSessionCookie(c);
     return c.body(null, 204);
@@ -27,7 +27,7 @@ export function mountAuthSessionRoutes(api: Hono, deps: AuthSessionDeps): void {
     if (session === null) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-    deps.sessions.revokeAll();
+    await deps.sessions.revokeAll();
     clearSessionCookie(c);
     return c.body(null, 204);
   });
@@ -38,13 +38,13 @@ export function mountAuthSessionRoutes(api: Hono, deps: AuthSessionDeps): void {
   });
 }
 
-export function startSession(
+export async function startSession(
   sessions: SessionService,
   c: Parameters<typeof setSessionCookie>[0],
   userAgent: string | undefined,
   scope: 'full' | 'recovery' = 'full',
-): string {
-  const token = sessions.create({ userAgent, scope });
+): Promise<string> {
+  const token = await sessions.create({ userAgent, scope });
   setSessionCookie(c, token);
   return token;
 }

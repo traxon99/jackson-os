@@ -44,12 +44,15 @@ export type AppStack = {
 };
 
 export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
-  Partial<Pick<AppConfig, 'APP_ORIGIN' | 'TRUST_CLOUDFLARE'>> & {
+  Partial<
+    Pick<AppConfig, 'APP_ORIGIN' | 'TRUST_CLOUDFLARE' | 'CRON_SECRET'>
+  > & {
     logger?: Logger;
     getSession?: GetSession;
     auth?: AuthDeps;
     authConfig?: AuthRouteConfig;
     stack?: AppStack;
+    cronSecret?: string;
   };
 
 function resolveCreateAppConfig(
@@ -107,14 +110,18 @@ export function createApp(config: CreateAppConfig) {
   }
 
   if (config.stack !== undefined) {
-    mountDataRoutes(api, config.stack);
+    mountDataRoutes(api, config.stack, {
+      CRON_SECRET: config.cronSecret ?? config.CRON_SECRET,
+    });
   } else {
     api.all('*', (c) => c.json({ error: 'Not Found' }, 404));
   }
 
   app.route('/api', api);
 
-  mountStatic(app, resolved.WEB_DIST);
+  if (process.env.VERCEL !== '1') {
+    mountStatic(app, resolved.WEB_DIST);
+  }
 
   return app;
 }

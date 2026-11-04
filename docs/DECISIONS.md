@@ -261,3 +261,21 @@ Foundation packages should remain portable so hosting, auth vendors, and analyti
 ### Homelab migration risk
 
 None — the rules exist specifically to keep migration to homelab a deploy/config exercise.
+
+## ADR-008 — Production Postgres (Supabase) and Vercel
+
+### Context
+
+Fly.io + SQLite never reached a stable production state (empty volume, boot issues). Jackson already uses Supabase for Jim; a **dedicated** `jackson-os` Supabase project isolates schema in `public` without touching Jim tables. Vercel is already connected for frontend work.
+
+### Decision
+
+- **Database:** Drizzle ORM on **Postgres** (`postgres` driver + Supabase pooler in production). Migrations in `packages/db/drizzle/` target the dedicated Supabase project (`nsonjougvktiqlzvvyqw`).
+- **Hosting:** **Vercel** serves `apps/web/dist` and runs the Hono API via `api/index.ts`. Dataset refresh on Vercel uses **Cron** (`/api/cron/tick`) instead of an in-process scheduler.
+- **Fly + SQLite:** Deprecated; `deploy/fly.toml` retained for rollback only.
+
+### Consequences
+
+- `DATABASE_URL` is required everywhere the server runs (except tests using `pglite:` or PGlite via `openTestDb`).
+- Local dev and CI unit tests use **PGlite**; production uses Supabase.
+- Compose homelab runs the same image with `DATABASE_URL` instead of a SQLite volume.

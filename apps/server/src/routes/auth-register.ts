@@ -1,11 +1,11 @@
 import { timingSafeEqual } from 'node:crypto';
+import type { JosDatabase } from '@jos/db';
 import { meta } from '@jos/db';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { eq } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
 import type { ChallengeStore } from '../auth/challenges.js';
 import {
@@ -30,19 +30,20 @@ function tokensEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-function setupTokenUsed(db: BetterSQLite3Database): boolean {
-  return (
-    db.select().from(meta).where(eq(meta.key, SETUP_TOKEN_USED_KEY)).get() !==
-    undefined
-  );
+async function setupTokenUsed(db: JosDatabase): Promise<boolean> {
+  const rows = await db
+    .select()
+    .from(meta)
+    .where(eq(meta.key, SETUP_TOKEN_USED_KEY));
+  return rows[0] !== undefined;
 }
 
-function markSetupTokenUsed(db: BetterSQLite3Database): void {
-  db.insert(meta).values({ key: SETUP_TOKEN_USED_KEY, value: '1' }).run();
+async function markSetupTokenUsed(db: JosDatabase): Promise<void> {
+  await db.insert(meta).values({ key: SETUP_TOKEN_USED_KEY, value: '1' });
 }
 
 export type AuthRegisterDeps = {
-  db: BetterSQLite3Database;
+  db: JosDatabase;
   rpId: string;
   appOrigin: string;
   setupToken?: string;
@@ -53,18 +54,18 @@ export type AuthRegisterDeps = {
   now: () => number;
 };
 
-function registrationAllowed(
+async function registrationAllowed(
   deps: AuthRegisterDeps,
   setupToken: string | undefined,
   sessionScope: 'full' | 'recovery' | null,
-): boolean {
+): Promise<boolean> {
   if (sessionScope === 'full' || sessionScope === 'recovery') {
     return true;
   }
-  if (deps.credentials.count() > 0) {
+  if ((await deps.credentials.count()) > 0) {
     return false;
   }
-  if (setupTokenUsed(deps.db)) {
+  if (await setupTokenUsed(deps.db)) {
     return false;
   }
   if (
@@ -77,15 +78,15 @@ function registrationAllowed(
   return true;
 }
 
-function readSessionScope(
+async function readSessionScope(
   deps: AuthRegisterDeps,
   c: Parameters<typeof readSessionToken>[0],
-): 'full' | 'recovery' | null {
+): Promise<'full' | 'recovery' | null> {
   const token = readSessionToken(c);
   if (token === undefined) {
     return null;
   }
-  const session = deps.sessions.lookup(token);
+  const session = await deps.sessions.lookup(token);
   if (session === null) {
     return null;
   }
@@ -103,8 +104,8 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
       body = {};
     }
 
-    const sessionScope = readSessionScope(deps, c);
-    if (!registrationAllowed(deps, body.setupToken, sessionScope)) {
+    const sessionScope = await readSessionScope(deps, c);
+    if (!(await registrationAllowed(deps, body.setupToken, sessionScope))) {
       return c.json({ error: 'Not Found' }, 404);
     }
 
@@ -120,7 +121,7 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
         residentKey: 'required',
         userVerification: 'required',
       },
-      excludeCredentials: deps.credentials.list().map((credential) => ({
+      excludeCredentials: (await deps.credentials.list()).map((credential) => ({
         id: credential.id,
         transports: JSON.parse(
           credential.transports,
@@ -141,8 +142,8 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
       return c.json({ error: 'Bad Request' }, 400);
     }
 
-    const sessionScope = readSessionScope(deps, c);
-    if (!registrationAllowed(deps, body.setupToken, sessionScope)) {
+    const sessionScope = await readSessionScope(deps, c);
+    if (!(await registrationAllowed(deps, body.setupToken, sessionScope))) {
       return c.json({ error: 'Not Found' }, 404);
     }
 
@@ -172,12 +173,12 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     }
 
     const { credential } = verification.registrationInfo;
-    const isFirstCredential = deps.credentials.count() === 0;
+    const isFirstCredential = (await deps.credentials.count()) === 0;
     const recoverySessionToken = readSessionToken(c);
     const isRecoveryFlow =
       sessionScope === 'recovery' && recoverySessionToken !== undefined;
 
-    deps.credentials.insert({
+    await deps.credentials.insert({
       id: credential.id,
       publicKey: Buffer.from(credential.publicKey).toString('base64url'),
       counter: credential.counter,
@@ -188,18 +189,18 @@ export function createAuthRegisterRoutes(deps: AuthRegisterDeps): Hono {
     });
 
     if (isFirstCredential) {
-      markSetupTokenUsed(deps.db);
+      await markSetupTokenUsed(deps.db);
     }
 
-    const fullToken = deps.sessions.create({
+    const fullToken = await deps.sessions.create({
       userAgent: c.req.header('user-agent') ?? undefined,
       scope: 'full',
     });
     setSessionCookie(c, fullToken);
 
     if (isRecoveryFlow && recoverySessionToken !== undefined) {
-      deps.sessions.revokeAllExcept(fullToken);
-      deps.sessions.revoke(recoverySessionToken);
+      await deps.sessions.revokeAllExcept(fullToken);
+      await deps.sessions.revoke(recoverySessionToken);
     }
 
     let generatedRecoveryCodes: string[] | undefined;

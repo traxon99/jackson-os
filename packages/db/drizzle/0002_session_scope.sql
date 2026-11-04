@@ -1,1 +1,0 @@
-ALTER TABLE `sessions` ADD `scope` text DEFAULT 'full' NOT NULL;

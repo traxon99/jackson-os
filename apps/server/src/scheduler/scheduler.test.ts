@@ -1,8 +1,8 @@
 import { createRegistry, type SourceAdapter, UpstreamError } from '@jos/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createTestConn } from '../test-db.js';
 import { createSnapshotStore } from '../data/snapshots.js';
+import { createTestConn } from '../test-db.js';
 import type { DatasetRunner } from './run-dataset.js';
 import { createScheduler } from './scheduler.js';
 
@@ -129,7 +129,11 @@ describe('createScheduler', () => {
 
     const runner: DatasetRunner = {
       run: async (source, datasetKey, _config) => {
-        await store.putError(source.id, datasetKey, 'upstream 429 · retry in 3m');
+        await store.putError(
+          source.id,
+          datasetKey,
+          'upstream 429 · retry in 3m',
+        );
         return { retryAfterMs: 180_000 };
       },
     };
