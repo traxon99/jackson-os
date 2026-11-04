@@ -75,6 +75,16 @@ Pushes and pull requests run [.github/workflows/ci.yml](../.github/workflows/ci.
 
 [`deploy/fly.toml`](../deploy/fly.toml) and the Fly volume workflow are kept for rollback only. The Fly app had no production SQLite data to migrate.
 
+## Auto-deploy on this host
+
+GitHub Actions does not deploy. On the machine that runs Compose, keep a clone checked out on `main` and start the watcher. It polls `origin/main` and runs `docker compose up -d --build` when that branch moves.
+
+```bash
+./deploy/watch-and-deploy.sh
+```
+
+For a persistent service, set the user and repo path in [deploy/jackson-os-autodeploy.service](../deploy/jackson-os-autodeploy.service), then install it. Push from any device; this host pulls and rebuilds.
+
 ## Related docs
 
 - [docs/SECURITY.md](SECURITY.md) — auth recovery and `admin reset-auth`

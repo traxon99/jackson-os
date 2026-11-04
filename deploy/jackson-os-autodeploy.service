@@ -1,0 +1,30 @@
+# systemd unit — install on the host that runs docker compose.
+#
+#   sudo cp deploy/jackson-os-autodeploy.service /etc/systemd/system/
+#   sudo sed -i "s|/home/YOUR_USER/jackson-os|$(pwd)|g" /etc/systemd/system/jackson-os-autodeploy.service
+#   sudo sed -i "s|User=YOUR_USER|User=$(id -un)|" /etc/systemd/system/jackson-os-autodeploy.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now jackson-os-autodeploy.service
+#
+# Run those commands from the clone. The first sed rewrites the repo path;
+# the second sets the service user.
+
+[Unit]
+Description=jackson-os: pull main and docker compose up on change
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/jackson-os
+Environment=REMOTE=origin
+Environment=BRANCH=main
+Environment=INTERVAL_SEC=60
+Environment=COMPOSE_FILE=deploy/compose.yaml
+ExecStart=/home/YOUR_USER/jackson-os/deploy/watch-and-deploy.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
