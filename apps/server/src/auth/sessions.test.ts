@@ -1,27 +1,23 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { closeDb, openDb, runMigrations, sessions } from '@jos/db';
+import { sessions } from '@jos/db';
 import { describe, expect, it } from 'vitest';
+import { createTestConn } from '../test-db.js';
 import { createSessionService } from './sessions.js';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
-function withDb(
+async function withDb(
   run: (ctx: {
-    db: ReturnType<typeof openDb>['db'];
+    db: Awaited<ReturnType<typeof createTestConn>>['conn']['db'];
     service: ReturnType<typeof createSessionService>;
     setNow: (t: number) => void;
-  }) => void,
-): void {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-sessions-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+  }) => Promise<void>,
+): Promise<void> {
+  const { conn, cleanup } = await createTestConn();
   let current = 1_000_000;
   const service = createSessionService(conn.db, () => current);
   try {
-    run({
+    await run({
       db: conn.db,
       service,
       setNow: (t) => {
@@ -29,69 +25,68 @@ function withDb(
       },
     });
   } finally {
-    closeDb(conn);
-    rmSync(dir, { recursive: true, force: true });
+    await cleanup();
   }
 }
 
 describe('createSessionService', () => {
-  it('slides expiry on lookup up to the 90-day cap', () => {
-    withDb(({ service, setNow }) => {
+  it('slides expiry on lookup up to the 90-day cap', async () => {
+    await withDb(async ({ service, setNow }) => {
       setNow(0);
-      const token = service.create({ userAgent: 'test' });
+      const token = await service.create({ userAgent: 'test' });
 
       setNow(25 * 24 * 60 * 60 * 1000);
-      const session = service.lookup(token);
+      const session = await service.lookup(token);
       expect(session).not.toBeNull();
       expect(session?.expiresAt).toBe(
         25 * 24 * 60 * 60 * 1000 + THIRTY_DAYS_MS,
       );
 
       setNow(54 * 24 * 60 * 60 * 1000);
-      service.lookup(token);
+      await service.lookup(token);
 
       setNow(83 * 24 * 60 * 60 * 1000);
-      const capped = service.lookup(token);
+      const capped = await service.lookup(token);
       expect(capped?.expiresAt).toBe(NINETY_DAYS_MS);
 
       setNow(89 * 24 * 60 * 60 * 1000);
-      expect(service.lookup(token)).not.toBeNull();
+      expect(await service.lookup(token)).not.toBeNull();
     });
   });
 
-  it('returns null after expiry without sliding', () => {
-    withDb(({ service, setNow }) => {
+  it('returns null after expiry without sliding', async () => {
+    await withDb(async ({ service, setNow }) => {
       setNow(0);
-      const token = service.create({});
+      const token = await service.create({});
 
       setNow(THIRTY_DAYS_MS + 1);
-      expect(service.lookup(token)).toBeNull();
+      expect(await service.lookup(token)).toBeNull();
     });
   });
 
-  it('revokes one, all, and all except', () => {
-    withDb(({ service }) => {
-      const a = service.create({});
-      const b = service.create({});
-      const c = service.create({});
+  it('revokes one, all, and all except', async () => {
+    await withDb(async ({ service }) => {
+      const a = await service.create({});
+      const b = await service.create({});
+      const c = await service.create({});
 
-      service.revoke(b);
-      expect(service.lookup(b)).toBeNull();
-      expect(service.lookup(a)).not.toBeNull();
+      await service.revoke(b);
+      expect(await service.lookup(b)).toBeNull();
+      expect(await service.lookup(a)).not.toBeNull();
 
-      service.revokeAllExcept(c);
-      expect(service.lookup(a)).toBeNull();
-      expect(service.lookup(c)).not.toBeNull();
+      await service.revokeAllExcept(c);
+      expect(await service.lookup(a)).toBeNull();
+      expect(await service.lookup(c)).not.toBeNull();
 
-      service.revokeAll();
-      expect(service.lookup(c)).toBeNull();
+      await service.revokeAll();
+      expect(await service.lookup(c)).toBeNull();
     });
   });
 
-  it('stores only hashed tokens in the database', () => {
-    withDb(({ db, service }) => {
-      const token = service.create({});
-      const rows = db.select().from(sessions).all();
+  it('stores only hashed tokens in the database', async () => {
+    await withDb(async ({ db, service }) => {
+      const token = await service.create({});
+      const rows = await db.select().from(sessions);
       expect(rows).toHaveLength(1);
       expect(rows[0]?.idHash).not.toBe(token);
       expect(rows[0]?.idHash).toHaveLength(64);

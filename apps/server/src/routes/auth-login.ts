@@ -59,7 +59,7 @@ export function createAuthLoginRoutes(deps: AuthLoginDeps): Hono {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const stored = deps.credentials.getById(credentialId);
+    const stored = await deps.credentials.getById(credentialId);
     if (stored === undefined || stored.revokedAt !== null) {
       log.warn({ credentialId }, 'WebAuthn authentication failed');
       return c.json({ error: 'Unauthorized' }, 401);
@@ -103,9 +103,9 @@ export function createAuthLoginRoutes(deps: AuthLoginDeps): Hono {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    deps.credentials.updateAfterUse(credentialId, newCounter, deps.now());
+    await deps.credentials.updateAfterUse(credentialId, newCounter, deps.now());
 
-    const fullToken = deps.sessions.create({
+    const fullToken = await deps.sessions.create({
       userAgent: c.req.header('user-agent') ?? undefined,
       scope: 'full',
     });

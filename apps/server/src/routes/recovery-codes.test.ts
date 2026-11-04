@@ -1,18 +1,16 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
 import { SESSION_COOKIE_NAME } from '../auth/cookie.js';
+import { createTestConn } from '../test-db.js';
 import { createAuthServices } from './mount-auth.js';
 
 const testOrigin = 'http://127.0.0.1';
 
-function createRecoveryCodesTestApp() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-recovery-regen-'));
-  const conn = openDb(join(dir, 'test.db'));
-  runMigrations(conn.db);
+async function createRecoveryCodesTestApp() {
+  const { conn, cleanup: dbCleanup } = await createTestConn();
   const webDist = mkdtempSync(join(tmpdir(), 'jos-web-'));
   writeFileSync(join(webDist, 'index.html'), '<!doctype html>');
   const now = () => 1_000_000;
@@ -43,9 +41,8 @@ function createRecoveryCodesTestApp() {
   return {
     app,
     auth,
-    cleanup: () => {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+    cleanup: async () => {
+      await dbCleanup();
       rmSync(webDist, { recursive: true, force: true });
     },
   };
@@ -53,7 +50,7 @@ function createRecoveryCodesTestApp() {
 
 describe('POST /api/recovery-codes/regenerate', () => {
   it('requires a full session', async () => {
-    const { app, cleanup } = createRecoveryCodesTestApp();
+    const { app, cleanup } = await createRecoveryCodesTestApp();
     try {
       const response = await app.request('/api/recovery-codes/regenerate', {
         method: 'POST',
@@ -61,14 +58,14 @@ describe('POST /api/recovery-codes/regenerate', () => {
       });
       expect(response.status).toBe(401);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 
   it('returns new codes for a full session', async () => {
-    const { app, auth, cleanup } = createRecoveryCodesTestApp();
+    const { app, auth, cleanup } = await createRecoveryCodesTestApp();
     try {
-      const token = auth.sessions.create({ scope: 'full' });
+      const token = await auth.sessions.create({ scope: 'full' });
       const response = await app.request('/api/recovery-codes/regenerate', {
         method: 'POST',
         headers: {
@@ -80,7 +77,7 @@ describe('POST /api/recovery-codes/regenerate', () => {
       const body = (await response.json()) as { recoveryCodes?: string[] };
       expect(body.recoveryCodes).toHaveLength(10);
     } finally {
-      cleanup();
+      await cleanup();
     }
   });
 });

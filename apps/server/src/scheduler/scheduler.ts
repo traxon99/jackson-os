@@ -96,7 +96,7 @@ export function createScheduler(deps: {
         deps.getSourceConfig(sourceId),
       );
       retryAfterMs = runResult?.retryAfterMs;
-      const row = deps.store.get(sourceId, datasetKey);
+      const row = await deps.store.get(sourceId, datasetKey);
       if (row?.status === 'ok') {
         failures.set(key, 0);
       } else {
@@ -109,13 +109,13 @@ export function createScheduler(deps: {
     }
   }
 
-  function start(): void {
+  async function start(): Promise<void> {
     for (const source of deps.registry.listSources()) {
       if (!deps.enabled(source.id)) {
         continue;
       }
       for (const datasetKey of Object.keys(source.datasets)) {
-        const snapshot = deps.store.get(source.id, datasetKey);
+        const snapshot = await deps.store.get(source.id, datasetKey);
         if (snapshot === undefined) {
           void runJob(source.id, datasetKey);
         } else {

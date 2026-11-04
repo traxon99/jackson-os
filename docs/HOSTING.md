@@ -1,137 +1,84 @@
 # Hosting
 
-jackson-os runs in three modes (see [README](../README.md)): local dev, Docker Compose (homelab), and Fly.io (production). This doc covers **Phase 1 (Fly + Cloudflare)** and **Phase 2 (homelab migration)**.
+jackson-os runs in three modes (see [README](../README.md)): local dev, Docker Compose (homelab), and **Vercel + Supabase Postgres** (production). Fly.io + SQLite was the previous Phase 1; those files remain under `deploy/` for rollback reference but are **deprecated** for new deploys.
 
-## Phase 1 — Fly.io + Cloudflare
+## Phase 1 — Vercel + Supabase (production)
 
-### Prerequisites
+### Supabase project
 
-- [flyctl](https://fly.io/docs/hands-on/install-flyctl/) logged in
-- Cloudflare DNS for `os.jacksonyanek.com`
-- GitHub `FLY_API_TOKEN` secret (for [.github/workflows/deploy.yml](../.github/workflows/deploy.yml))
+Use the dedicated **`jackson-os`** project (Traxa 99 / traxon99 org), **public schema only**:
 
-### Initial Fly setup
+| Field        | Value                                      |
+| ------------ | ------------------------------------------ |
+| Project name | `jackson-os`                               |
+| Project ref  | `nsonjougvktiqlzvvyqw`                     |
+| API URL      | `https://nsonjougvktiqlzvvyqw.supabase.co` |
+| Region       | `us-east-1`                                |
 
-From the repo root:
+No tables from the Jim app live in this project. All jackson-os Drizzle migrations target `public` on this empty project.
 
-```bash
-fly launch --no-deploy -c deploy/fly.toml
-```
+#### One-time database setup
 
-Create the persistent volume (1 GB example; size as needed):
-
-```bash
-fly volumes create jos_data --region ewr --size 1 -a jackson-os
-```
-
-Set secrets (generate a fresh setup token ≥ 32 characters):
+After the project is `ACTIVE_HEALTHY`, apply migrations (from a machine with `DATABASE_URL` set to the Supabase **direct** or **session** connection string):
 
 ```bash
-fly secrets set SETUP_TOKEN='…your-token…' -a jackson-os
-```
-
-Deploy manually the first time, or merge to `main` after CI and the deploy workflow runs:
-
-```bash
-fly deploy -c deploy/fly.toml --remote-only
-```
-
-Configuration reference: [`deploy/fly.toml`](../deploy/fly.toml) (`DATA_DIR=/data`, `TRUST_CLOUDFLARE=true`, `APP_ORIGIN=https://os.jacksonyanek.com`, health check on `/api/health`).
-
-### Cloudflare DNS and TLS
-
-1. Add a **proxied** (orange cloud) **CNAME** for `os.jacksonyanek.com` → `<your-app>.fly.dev`.
-2. SSL/TLS mode: **Full (strict)**.
-3. **WAF → Rate limiting rule** targeting `/api/auth/*` (match URI path prefix `/api/auth/`). Tune threshold to your traffic; the app also rate-limits auth routes.
-4. **Disable or redirect** the public `*.fly.dev` hostname in the Fly dashboard (or Cloudflare) so users only enter via `os.jacksonyanek.com`.
-
-### Monthly cost estimate (Phase 1)
-
-| Item                                                   | Estimate (USD / month) | Notes                          |
-| ------------------------------------------------------ | ---------------------- | ------------------------------ |
-| Fly `shared-cpu-1x` 512 MB, `min_machines_running = 1` | ~$5–7                  | Always-on for the scheduler    |
-| Fly volume 1 GB                                        | ~$0.15                 | `jos_data` at `/data`          |
-| Cloudflare proxy + WAF (free tier)                     | $0                     | Paid plans add features        |
-| **Typical total**                                      | **~$5–8**              | Excludes optional integrations |
-
-## Phase 2 — Homelab migration (Fly → Compose + tunnel)
-
-Goal: same container image and `/data` layout, ingress via Cloudflare Tunnel instead of Fly.
-
-### Prepare homelab
-
-1. Copy `deploy/secrets/setup_token` (or equivalent) and optional `tunnel_token`.
-2. On the homelab host, from the repo:
-
-   ```bash
-   docker compose -f deploy/compose.yaml --profile tunnel up -d --build
-   ```
-
-3. Confirm the tunnel serves the app on your internal URL before cutting over DNS.
-
-### Migrate data (stop → `VACUUM INTO` → copy → start)
-
-On the **source** (Fly or existing Compose host) with the app **stopped**:
-
-```bash
-# Example on Compose — adjust paths/containers for Fly SSH
-docker compose -f deploy/compose.yaml stop app
-sqlite3 /var/lib/docker/volumes/deploy_jos-data/_data/app.db ".backup '/tmp/app-migrate.db'"
-# or, from a running DB with backup helper:
-# node -e "require('@jos/db')..."  — prefer packages/db backup: VACUUM INTO via backupNow
-```
-
-Using the built-in backup helper (app stopped, `DATA_DIR` pointing at the volume):
-
-```bash
-export DATA_DIR=/path/to/jos-data
-node -e "
-import { backupNow } from '@jos/db';
-import { openDb, closeDb } from '@jos/db';
-import { join } from 'node:path';
-const dir = process.env.DATA_DIR;
-const conn = openDb(join(dir, 'app.db'));
-const dest = join(dir, 'migrate-' + Date.now() + '.db');
-backupNow(conn.db, dest);
-closeDb(conn);
-console.log('Wrote', dest);
+export DATABASE_URL='postgresql://postgres.[ref]:[password]@aws-0-us-east-1.pooler.supabase.com:5432/postgres'
+pnpm --filter @jos/db build
+node --input-type=module -e "
+  import { openDb, runMigrations, closeDb } from '@jos/db';
+  const conn = await openDb(process.env.DATABASE_URL);
+  await runMigrations(conn);
+  await closeDb(conn);
+  console.log('Migrations applied.');
 "
 ```
 
-Copy the snapshot to the homelab volume (rsync/scp), replace `app.db`, remove `app.db-wal` / `app.db-shm` if present, then:
+Alternatively, run the SQL in [`packages/db/drizzle/0000_initial.sql`](../packages/db/drizzle/0000_initial.sql) in the Supabase SQL editor.
 
-```bash
-docker compose -f deploy/compose.yaml start app
-```
+### Vercel project
 
-Verify sign-in still works (`RP_ID` / `APP_ORIGIN` unchanged — still `os.jacksonyanek.com`).
+1. Create or link a Vercel project for this GitHub repo (monorepo root; `vercel.json` at repo root).
+2. Set **Production** environment variables (Settings → Environment Variables):
 
-### Cutover DNS
+| Variable                                  | Required     | Notes                                                                                                                   |
+| ----------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                            | Yes          | Supabase **transaction pooler** URI for serverless (`prepare: false` in code). Session/direct URL for local `pnpm dev`. |
+| `APP_ORIGIN`                              | Yes          | Public HTTPS origin, e.g. `https://os.jacksonyanek.com`                                                                 |
+| `RP_ID`                                   | Yes          | WebAuthn RP ID (hostname only), e.g. `os.jacksonyanek.com`                                                              |
+| `SETUP_TOKEN`                             | First deploy | ≥32 chars; one-time setup                                                                                               |
+| `CRON_SECRET`                             | Yes (prod)   | ≥16 chars; Vercel Cron sends `Authorization: Bearer …` to `/api/cron/tick`                                              |
+| `TRUST_CLOUDFLARE`                        | Recommended  | `true` when behind Cloudflare proxy                                                                                     |
+| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional     | Same as local                                                                                                           |
 
-1. In Cloudflare, change `os.jacksonyanek.com` from the Fly CNAME to the tunnel hostname (or disable Fly proxy target).
-2. Wait for TTL; confirm `https://os.jacksonyanek.com/api/auth/me` responds when signed in.
+3. GitHub Actions deploy (optional): add secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` for [.github/workflows/deploy.yml](../.github/workflows/deploy.yml). Vercel Git integration alone also deploys on push to `main`.
 
-### Rollback
+### Architecture on Vercel
 
-Flip the DNS record back to Fly (or re-enable the Fly target), restart the Fly app if needed, and stop the homelab stack. No app code changes required.
+- **Static web:** `apps/web/dist` (`outputDirectory` in `vercel.json`).
+- **API:** Hono via [`api/index.ts`](../api/index.ts) (`/api/*` rewrite).
+- **Background refresh:** In-process scheduler is **disabled** on Vercel (`VERCEL=1`). Vercel Cron hits `/api/cron/tick` every 5 minutes (see `vercel.json`).
 
-### Local dry-run (Compose)
+### Cloudflare DNS and TLS
 
-Simulate migration without DNS:
+Same as before: proxied CNAME to Vercel, SSL **Full (strict)**, WAF rate limits on `/api/auth/*`.
 
-```bash
-docker compose -f deploy/compose.yaml up -d --build
-# stop app, VACUUM INTO backup, copy to a fresh volume, start, curl /api/auth/me with session cookie
-docker compose -f deploy/compose.yaml stop app
-# … copy backup over app.db in jos-data …
-docker compose -f deploy/compose.yaml start app
-```
+### Deprecated — Fly.io + SQLite
 
-Use the same WebAuthn `RP_ID` and `APP_ORIGIN` in both stacks so passkeys remain valid.
+[`deploy/fly.toml`](../deploy/fly.toml) and the Fly volume workflow are kept for rollback only. The Fly app had no production SQLite data to migrate.
+
+## Phase 2 — Homelab migration (Compose + tunnel)
+
+Goal: run the same container image with **Postgres** (`DATABASE_URL`) instead of a local SQLite file.
+
+1. Copy secrets and set `DATABASE_URL` (can point at Supabase or a local Postgres).
+2. `docker compose -f deploy/compose.yaml up -d --build`
+3. Ingress via Cloudflare Tunnel (`--profile tunnel`) as before.
+
+Backups: use Supabase backups / `pg_dump` — the old SQLite `VACUUM INTO` helper was removed.
 
 ## Deploy automation
 
-Pushes to `main` run CI, then [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) deploys with `flyctl deploy -c deploy/fly.toml --remote-only --strategy rolling`. Failed Fly health checks leave the previous machines serving traffic.
+Pushes to `main` run CI, then [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) deploys to Vercel when secrets are configured.
 
 ## Related docs
 

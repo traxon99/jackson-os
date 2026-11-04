@@ -1,5 +1,4 @@
 import { randomBytes } from 'node:crypto';
-import { join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import {
@@ -35,18 +34,17 @@ export async function resetAuth(
   }
 
   const config = loadConfig(env);
-  const dbPath = join(config.DATA_DIR, 'app.db');
-  const conn = openDb(dbPath);
-  runMigrations(conn.db);
+  const conn = await openDb(config.DATABASE_URL);
+  await runMigrations(conn);
 
-  conn.db.delete(webauthnCredentials).run();
-  conn.db.delete(sessions).run();
-  conn.db.delete(recoveryCodes).run();
-  conn.db.delete(meta).where(eq(meta.key, SETUP_TOKEN_USED_KEY)).run();
+  await conn.db.delete(webauthnCredentials);
+  await conn.db.delete(sessions);
+  await conn.db.delete(recoveryCodes);
+  await conn.db.delete(meta).where(eq(meta.key, SETUP_TOKEN_USED_KEY));
 
   const token = randomBytes(32).toString('hex');
 
-  closeDb(conn);
+  await closeDb(conn);
 
   console.log('');
   console.log('Auth state cleared (credentials, sessions, recovery codes).');

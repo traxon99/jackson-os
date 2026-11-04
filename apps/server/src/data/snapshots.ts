@@ -1,15 +1,18 @@
 import type { WidgetPayload } from '@jos/core';
+import type { JosDatabase } from '@jos/db';
 import { sourceSnapshots } from '@jos/db';
 import { and, eq } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 export type SnapshotRow = typeof sourceSnapshots.$inferSelect;
 
 export type SnapshotStore = ReturnType<typeof createSnapshotStore>;
 
-export function createSnapshotStore(db: BetterSQLite3Database) {
-  function get(sourceId: string, key: string): SnapshotRow | undefined {
-    const rows = db
+export function createSnapshotStore(db: JosDatabase) {
+  async function get(
+    sourceId: string,
+    key: string,
+  ): Promise<SnapshotRow | undefined> {
+    const rows = await db
       .select()
       .from(sourceSnapshots)
       .where(
@@ -17,20 +20,20 @@ export function createSnapshotStore(db: BetterSQLite3Database) {
           eq(sourceSnapshots.sourceId, sourceId),
           eq(sourceSnapshots.key, key),
         ),
-      )
-      .all();
+      );
     return rows[0];
   }
 
-  function putOk(
+  async function putOk(
     sourceId: string,
     key: string,
     payload: unknown,
     fetchedAt: number,
     expiresAt: number,
-  ): void {
+  ): Promise<void> {
     const payloadJson = JSON.stringify(payload);
-    db.insert(sourceSnapshots)
+    await db
+      .insert(sourceSnapshots)
       .values({
         sourceId,
         key,
@@ -49,28 +52,30 @@ export function createSnapshotStore(db: BetterSQLite3Database) {
           status: 'ok',
           error: null,
         },
-      })
-      .run();
+      });
   }
 
-  function putError(sourceId: string, key: string, error: string): void {
-    const existing = get(sourceId, key);
+  async function putError(
+    sourceId: string,
+    key: string,
+    error: string,
+  ): Promise<void> {
+    const existing = await get(sourceId, key);
     if (existing === undefined) {
-      db.insert(sourceSnapshots)
-        .values({
-          sourceId,
-          key,
-          payload: 'null',
-          fetchedAt: 0,
-          expiresAt: null,
-          status: 'error',
-          error,
-        })
-        .run();
+      await db.insert(sourceSnapshots).values({
+        sourceId,
+        key,
+        payload: 'null',
+        fetchedAt: 0,
+        expiresAt: null,
+        status: 'error',
+        error,
+      });
       return;
     }
 
-    db.update(sourceSnapshots)
+    await db
+      .update(sourceSnapshots)
       .set({
         status: 'error',
         error,
@@ -80,8 +85,7 @@ export function createSnapshotStore(db: BetterSQLite3Database) {
           eq(sourceSnapshots.sourceId, sourceId),
           eq(sourceSnapshots.key, key),
         ),
-      )
-      .run();
+      );
   }
 
   function toWidgetPayload<T>(

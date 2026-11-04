@@ -7,7 +7,7 @@ import {
 
 describe('GET/PUT /api/layout', () => {
   it('round-trips a saved layout', async () => {
-    const stack = createTestStack();
+    const stack = await createTestStack();
     const items = [
       { i: 'demo.series', x: 0, y: 0, w: 6, h: 3 },
       { i: 'demo.clock', x: 6, y: 0, w: 3, h: 2 },
@@ -33,12 +33,12 @@ describe('GET/PUT /api/layout', () => {
         items,
       });
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns 400 for an unknown widget id', async () => {
-    const stack = createTestStack();
+    const stack = await createTestStack();
     try {
       const response = await stack.app.request('/api/layout', {
         method: 'PUT',
@@ -52,12 +52,12 @@ describe('GET/PUT /api/layout', () => {
       });
       expect(response.status).toBe(400);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns 400 when size is below min', async () => {
-    const stack = createTestStack();
+    const stack = await createTestStack();
     try {
       const response = await stack.app.request('/api/layout', {
         method: 'PUT',
@@ -71,12 +71,12 @@ describe('GET/PUT /api/layout', () => {
       });
       expect(response.status).toBe(400);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns generated default layout when none is saved', async () => {
-    const stack = createTestStack();
+    const stack = await createTestStack();
     try {
       const response = await stack.app.request('/api/layout', {
         headers: testSessionHeaders,
@@ -88,7 +88,7 @@ describe('GET/PUT /api/layout', () => {
         'demo.series',
       ]);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 });

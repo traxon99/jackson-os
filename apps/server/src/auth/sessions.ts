@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
+import type { JosDatabase } from '@jos/db';
 import { sessions } from '@jos/db';
 import { eq, ne } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
@@ -21,15 +21,12 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export function createSessionService(
-  db: BetterSQLite3Database,
-  now: () => number,
-) {
-  function create(input: {
+export function createSessionService(db: JosDatabase, now: () => number) {
+  async function create(input: {
     userAgent?: string;
     scope?: SessionScope;
     absoluteTtlMs?: number;
-  }): string {
+  }): Promise<string> {
     const token = randomBytes(32).toString('base64url');
     const idHash = hashToken(token);
     const createdAt = now();
@@ -38,27 +35,24 @@ export function createSessionService(
         ? createdAt + input.absoluteTtlMs
         : createdAt + THIRTY_DAYS_MS;
 
-    db.insert(sessions)
-      .values({
-        idHash,
-        createdAt,
-        expiresAt,
-        lastSeenAt: createdAt,
-        userAgent: input.userAgent ?? null,
-        scope: input.scope ?? 'full',
-      })
-      .run();
+    await db.insert(sessions).values({
+      idHash,
+      createdAt,
+      expiresAt,
+      lastSeenAt: createdAt,
+      userAgent: input.userAgent ?? null,
+      scope: input.scope ?? 'full',
+    });
 
     return token;
   }
 
-  function lookup(token: string): SessionRecord | null {
+  async function lookup(token: string): Promise<SessionRecord | null> {
     const idHash = hashToken(token);
-    const rows = db
+    const rows = await db
       .select()
       .from(sessions)
-      .where(eq(sessions.idHash, idHash))
-      .all();
+      .where(eq(sessions.idHash, idHash));
     const row = rows[0];
     if (row === undefined) {
       return null;
@@ -83,10 +77,10 @@ export function createSessionService(
     const maxExpires = row.createdAt + NINETY_DAYS_MS;
     const slidExpires = Math.min(current + THIRTY_DAYS_MS, maxExpires);
 
-    db.update(sessions)
+    await db
+      .update(sessions)
       .set({ lastSeenAt: current, expiresAt: slidExpires })
-      .where(eq(sessions.idHash, idHash))
-      .run();
+      .where(eq(sessions.idHash, idHash));
 
     return {
       id: row.idHash,
@@ -98,19 +92,17 @@ export function createSessionService(
     };
   }
 
-  function revoke(token: string): void {
-    db.delete(sessions)
-      .where(eq(sessions.idHash, hashToken(token)))
-      .run();
+  async function revoke(token: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.idHash, hashToken(token)));
   }
 
-  function revokeAll(): void {
-    db.delete(sessions).run();
+  async function revokeAll(): Promise<void> {
+    await db.delete(sessions);
   }
 
-  function revokeAllExcept(token: string): void {
+  async function revokeAllExcept(token: string): Promise<void> {
     const keep = hashToken(token);
-    db.delete(sessions).where(ne(sessions.idHash, keep)).run();
+    await db.delete(sessions).where(ne(sessions.idHash, keep));
   }
 
   return {

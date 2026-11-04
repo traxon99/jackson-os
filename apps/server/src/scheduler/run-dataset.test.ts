@@ -1,10 +1,7 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { type SourceAdapter, UpstreamError } from '@jos/core';
-import { closeDb, openDb, runMigrations } from '@jos/db';
 import { describe, expect, it, vi } from 'vitest';
 import { createSnapshotStore } from '../data/snapshots.js';
+import { createTestConn } from '../test-db.js';
 import { createRunner } from './run-dataset.js';
 
 const stubLog = {
@@ -13,17 +10,14 @@ const stubLog = {
   error: () => {},
 };
 
-function testDb() {
-  const dir = mkdtempSync(join(tmpdir(), 'jos-runner-'));
-  const dbPath = join(dir, 'test.db');
-  const conn = openDb(dbPath);
-  runMigrations(conn.db);
-  return { conn, dir, store: createSnapshotStore(conn.db) };
+async function testDb() {
+  const { conn, cleanup } = await createTestConn();
+  return { conn, cleanup, store: createSnapshotStore(conn.db) };
 }
 
 describe('createRunner', () => {
   it('deduplicates concurrent runs for the same source:dataset', async () => {
-    const { conn, dir, store } = testDb();
+    const { conn, cleanup, store } = await testDb();
     let fetchCount = 0;
     const source: SourceAdapter = {
       id: 'demo',
@@ -57,14 +51,13 @@ describe('createRunner', () => {
       ]);
       expect(fetchCount).toBe(1);
     } finally {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 
   it('records putError on timeout', async () => {
     vi.useFakeTimers();
-    const { conn, dir, store } = testDb();
+    const { conn, cleanup, store } = await testDb();
     const source: SourceAdapter = {
       id: 'demo',
       displayName: 'Demo',
@@ -97,17 +90,16 @@ describe('createRunner', () => {
       await vi.advanceTimersByTimeAsync(15_000);
       await runPromise;
 
-      const row = store.get('demo', 'slow');
+      const row = await store.get('demo', 'slow');
       expect(row?.status).toBe('error');
     } finally {
       vi.useRealTimers();
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 
   it('records formatted UpstreamError on upstream failure', async () => {
-    const { conn, dir, store } = testDb();
+    const { conn, cleanup, store } = await testDb();
     const source: SourceAdapter = {
       id: 'demo',
       displayName: 'Demo',
@@ -137,17 +129,16 @@ describe('createRunner', () => {
     try {
       const result = await runner.run(source, 'rate', {});
       expect(result).toEqual({ retryAfterMs: 180_000 });
-      const row = store.get('demo', 'rate');
+      const row = await store.get('demo', 'rate');
       expect(row?.status).toBe('error');
       expect(row?.error).toBe('upstream 429 · retry in 3m');
     } finally {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 
   it('records putError on schema failure', async () => {
-    const { conn, dir, store } = testDb();
+    const { conn, cleanup, store } = await testDb();
     const source: SourceAdapter = {
       id: 'demo',
       displayName: 'Demo',
@@ -175,11 +166,10 @@ describe('createRunner', () => {
 
     try {
       await runner.run(source, 'bad', {});
-      const row = store.get('demo', 'bad');
+      const row = await store.get('demo', 'bad');
       expect(row?.status).toBe('error');
     } finally {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 });

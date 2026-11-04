@@ -1,7 +1,7 @@
 import type { Registry } from '@jos/core';
+import type { JosDatabase } from '@jos/db';
 import { widgetLayout } from '@jos/db';
 import { eq } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -32,7 +32,7 @@ const putBodySchema = z.object({
 
 export type LayoutRoutesDeps = {
   registry: Registry;
-  db: BetterSQLite3Database;
+  db: JosDatabase;
   now: () => number;
 };
 
@@ -82,12 +82,11 @@ function validateLayoutItems(
 export function createLayoutRoutes(deps: LayoutRoutesDeps): Hono {
   const routes = new Hono();
 
-  routes.get('/', (c) => {
-    const rows = deps.db
+  routes.get('/', async (c) => {
+    const rows = await deps.db
       .select()
       .from(widgetLayout)
-      .where(eq(widgetLayout.id, 'default'))
-      .all();
+      .where(eq(widgetLayout.id, 'default'));
     const row = rows[0];
 
     if (row === undefined) {
@@ -124,14 +123,13 @@ export function createLayoutRoutes(deps: LayoutRoutesDeps): Hono {
 
     const layoutJson = JSON.stringify(parsed.data.items);
     const updatedAt = deps.now();
-    deps.db
+    await deps.db
       .insert(widgetLayout)
       .values({ id: 'default', layout: layoutJson, updatedAt })
       .onConflictDoUpdate({
         target: widgetLayout.id,
         set: { layout: layoutJson, updatedAt },
-      })
-      .run();
+      });
 
     return c.json({ id: 'default', items: parsed.data.items });
   });

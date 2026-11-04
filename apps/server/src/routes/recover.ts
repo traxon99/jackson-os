@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { JosDatabase } from '@jos/db';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { readSessionToken, setSessionCookie } from '../auth/cookie.js';
@@ -17,7 +17,7 @@ const recoverBodySchema = z.object({
 });
 
 export type RecoverRoutesDeps = {
-  db: BetterSQLite3Database;
+  db: JosDatabase;
   sessions: SessionService;
   recoveryCodes: RecoveryCodesService;
   now: () => number;
@@ -48,7 +48,7 @@ export function createRecoverRoutes(deps: RecoverRoutesDeps): Hono {
     }
 
     const accepted = await deps.recoveryCodes.consume(parsed.code);
-    insertActionLog(deps.db, {
+    await insertActionLog(deps.db, {
       id: randomUUID(),
       widgetId: 'auth',
       action: 'recover',
@@ -63,10 +63,10 @@ export function createRecoverRoutes(deps: RecoverRoutesDeps): Hono {
 
     const previousToken = readSessionToken(c);
     if (previousToken !== undefined) {
-      deps.sessions.revoke(previousToken);
+      await deps.sessions.revoke(previousToken);
     }
 
-    const token = deps.sessions.create({
+    const token = await deps.sessions.create({
       userAgent: c.req.header('user-agent') ?? undefined,
       scope: 'recovery',
       absoluteTtlMs: RECOVERY_TTL_MS,

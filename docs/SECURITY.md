@@ -1,6 +1,6 @@
 # Security
 
-How jackson-os enforces baseline HTTP and logging controls in `apps/server`, plus SQLite backup and restore.
+How jackson-os enforces baseline HTTP and logging controls in `apps/server`, plus database backup notes.
 
 ## Controls
 
@@ -16,14 +16,7 @@ How jackson-os enforces baseline HTTP and logging controls in `apps/server`, plu
 
 ## Backups & restore
 
-Scheduled backups use [`packages/db/src/backup.ts`](../packages/db/src/backup.ts): `backupNow` writes a consistent SQLite snapshot with `VACUUM INTO`, and `pruneBackups` removes `app-*.db` files older than the retention window (default 14 days).
-
-To restore from a backup file:
-
-1. Stop the server.
-2. Copy the backup file over `app.db` in the data directory.
-3. Delete `app.db-wal` and `app.db-shm` if present.
-4. Start the server again.
+Production data lives in **Supabase Postgres** (dedicated `jackson-os` project). Use [Supabase backups](https://supabase.com/docs/guides/platform/backups) and/or periodic `pg_dump` from a trusted host with `DATABASE_URL`. There is no in-app SQLite snapshot helper anymore.
 
 ## Lost my phone
 
@@ -53,7 +46,7 @@ https://os.jacksonyanek.com/recover
 
 Use this when you have shell access to the host running jackson-os and no recovery code works.
 
-1. **Stop** the app (or run the command on a stopped container volume — do not run two servers on the same `DATA_DIR`).
+1. **Stop** the app (or run against a database that no other instance is writing to).
 2. Run **`admin reset-auth`**. It wipes WebAuthn credentials, sessions, and recovery codes, clears the “setup token already used” mark, and prints a new **`SETUP_TOKEN` once**.
 3. Set that token as **`SETUP_TOKEN`** (or write it to the secret file your deployment uses), **restart** the server.
 4. Open **`{APP_ORIGIN}/setup`**, present the setup token, and register a new passkey.
@@ -79,10 +72,10 @@ Open:
 http://localhost:8080/setup
 ```
 
-For a dev tree without Docker, point `DATA_DIR` at your data directory:
+For a dev tree without Docker:
 
 ```bash
-export DATA_DIR=./data APP_ORIGIN=http://localhost:8080
+export DATABASE_URL='postgresql://...' APP_ORIGIN=http://localhost:8080
 pnpm --filter server admin reset-auth --yes
 ```
 

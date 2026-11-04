@@ -7,8 +7,8 @@ export function mountPasskeyRoutes(
   api: Hono,
   credentials: CredentialsStore,
 ): void {
-  api.get('/passkeys', (c) => {
-    const passkeys = credentials.list().map((row) => ({
+  api.get('/passkeys', async (c) => {
+    const passkeys = (await credentials.list()).map((row) => ({
       id: row.id,
       deviceName: row.deviceName,
       createdAt: row.createdAt,
@@ -40,23 +40,23 @@ export function mountPasskeyRoutes(
     }
 
     const id = c.req.param('id');
-    const updated = credentials.updateDeviceName(id, deviceName);
+    const updated = await credentials.updateDeviceName(id, deviceName);
     if (!updated) {
       return c.json({ error: 'Not Found' }, 404);
     }
     return c.body(null, 204);
   });
 
-  api.delete('/passkeys/:id', (c) => {
+  api.delete('/passkeys/:id', async (c) => {
     const id = c.req.param('id');
-    const existing = credentials.getById(id);
+    const existing = await credentials.getById(id);
     if (existing === undefined) {
       return c.json({ error: 'Not Found' }, 404);
     }
-    if (credentials.count() <= 1) {
+    if ((await credentials.count()) <= 1) {
       return c.json({ error: 'Cannot delete last passkey' }, 409);
     }
-    credentials.remove(id);
+    await credentials.remove(id);
     return c.body(null, 204);
   });
 }

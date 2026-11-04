@@ -18,8 +18,8 @@ export type AuthServices = { sessions: SessionService; getSession: GetSession };
 
 export function createAuthServices(stack: AppStack): AuthServices {
   const sessions = createSessionService(stack.conn.db, stack.now);
-  const getSession = createGetSession((token) => {
-    const record = sessions.lookup(token);
+  const getSession = createGetSession(async (token) => {
+    const record = await sessions.lookup(token);
     return record === null ? null : { id: record.id, scope: record.scope };
   }, readSessionToken);
   return { sessions, getSession };

@@ -1,6 +1,4 @@
-import { existsSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { defineConfig } from '@playwright/test';
 
 function systemChromiumPath(): string | undefined {
@@ -20,7 +18,6 @@ function systemChromiumPath(): string | undefined {
 }
 
 const chromiumExecutable = systemChromiumPath();
-const e2eDataDir = mkdtempSync(join(tmpdir(), 'jos-e2e-'));
 const setupToken = '01234567890123456789012345678901';
 const appOrigin = 'http://localhost:8080';
 
@@ -37,7 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: [
-      `DATA_DIR=${e2eDataDir}`,
+      'DATABASE_URL=pglite://memory',
       `APP_ORIGIN=${appOrigin}`,
       'RP_ID=localhost',
       `SETUP_TOKEN=${setupToken}`,

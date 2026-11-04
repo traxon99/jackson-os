@@ -1,8 +1,8 @@
+import type { JosDatabase } from '@jos/db';
 import { actionLog } from '@jos/db';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export function insertActionLog(
-  db: BetterSQLite3Database,
+export async function insertActionLog(
+  db: JosDatabase,
   row: {
     id: string;
     widgetId: string;
@@ -11,15 +11,13 @@ export function insertActionLog(
     result: string;
     createdAt: number;
   },
-): void {
-  db.insert(actionLog)
-    .values({
-      id: row.id,
-      widgetId: row.widgetId,
-      action: row.action,
-      params: JSON.stringify(row.params),
-      result: row.result,
-      createdAt: row.createdAt,
-    })
-    .run();
+): Promise<void> {
+  await db.insert(actionLog).values({
+    id: row.id,
+    widgetId: row.widgetId,
+    action: row.action,
+    params: JSON.stringify(row.params),
+    result: row.result,
+    createdAt: row.createdAt,
+  });
 }

@@ -1,34 +1,34 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { bigint, pgTable, text } from 'drizzle-orm/pg-core';
 
-export const webauthnCredentials = sqliteTable('webauthn_credentials', {
+export const webauthnCredentials = pgTable('webauthn_credentials', {
   id: text('id').primaryKey(),
   publicKey: text('public_key').notNull(),
-  counter: integer('counter').notNull(),
+  counter: bigint('counter', { mode: 'number' }).notNull(),
   transports: text('transports').notNull(),
   deviceName: text('device_name'),
-  createdAt: integer('created_at').notNull(),
-  lastUsedAt: integer('last_used_at'),
-  revokedAt: integer('revoked_at'),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  lastUsedAt: bigint('last_used_at', { mode: 'number' }),
+  revokedAt: bigint('revoked_at', { mode: 'number' }),
 });
 
-export const sessions = sqliteTable('sessions', {
+export const sessions = pgTable('sessions', {
   idHash: text('id_hash').primaryKey(),
-  createdAt: integer('created_at').notNull(),
-  expiresAt: integer('expires_at').notNull(),
-  lastSeenAt: integer('last_seen_at').notNull(),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  expiresAt: bigint('expires_at', { mode: 'number' }).notNull(),
+  lastSeenAt: bigint('last_seen_at', { mode: 'number' }).notNull(),
   userAgent: text('user_agent'),
   scope: text('scope', { enum: ['full', 'recovery'] })
     .notNull()
     .default('full'),
 });
 
-export const meta = sqliteTable('meta', {
+export const meta = pgTable('meta', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
 
-export const recoveryCodes = sqliteTable('recovery_codes', {
+export const recoveryCodes = pgTable('recovery_codes', {
   id: text('id').primaryKey(),
   codeHash: text('code_hash').notNull(),
-  usedAt: integer('used_at'),
+  usedAt: bigint('used_at', { mode: 'number' }),
 });

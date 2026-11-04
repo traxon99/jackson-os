@@ -1,17 +1,25 @@
 import type { Hono } from 'hono';
 import type { AppStack } from '../app.js';
+import type { AppConfig } from '../config.js';
 import { createLimiter } from '../lib/rate-limit.js';
 import { createActionsRoutes } from './actions.js';
+import { mountCronRoutes } from './cron.js';
 import { createLayoutRoutes } from './layout.js';
 import { createSourcesRoutes } from './sources.js';
 import { createWidgetsRoutes } from './widgets.js';
 
-export function mountDataRoutes(api: Hono, stack: AppStack): void {
+export function mountDataRoutes(
+  api: Hono,
+  stack: AppStack,
+  config?: Pick<AppConfig, 'CRON_SECRET'>,
+): void {
   const refreshLimiter = createLimiter({
     capacity: 3,
     refillPerSec: 1 / 20,
     now: stack.now,
   });
+
+  mountCronRoutes(api, stack, config?.CRON_SECRET);
 
   api.route(
     '/layout',

@@ -1,9 +1,7 @@
-import { rmSync } from 'node:fs';
-import { join } from 'node:path';
 import type { AdapterContext, DemoConfig } from '@jos/core';
 import { registerJim } from '@jos/core';
-import { closeDb } from '@jos/db';
 import { describe, expect, it } from 'vitest';
+import { createApp } from '../app.js';
 import {
   createTestStack,
   destroyTestStack,
@@ -14,19 +12,19 @@ import {
 describe('GET /api/widgets/:widgetId', () => {
   it('returns 404 for an unknown widget', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({ WEB_DIST: webDist });
+    const stack = await createTestStack({ WEB_DIST: webDist });
     try {
       const response = await stack.app.request('/api/widgets/missing.widget', {
         headers: testSessionHeaders,
       });
       expect(response.status).toBe(404);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('deduplicates background refresh for stale widgets', async () => {
-    const stack = createTestStack({
+    const stack = await createTestStack({
       now: () => 10_000,
     });
 
@@ -43,7 +41,7 @@ describe('GET /api/widgets/:widgetId', () => {
       return originalFetch(ctx);
     };
 
-    stack.store.putOk(
+    await stack.store.putOk(
       'demo',
       'clock',
       { iso: '2026-01-01T00:00:00.000Z' },
@@ -65,13 +63,13 @@ describe('GET /api/widgets/:widgetId', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(fetchCount).toBe(1);
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('returns disabled when the source is off', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({
+    const stack = await createTestStack({
       WEB_DIST: webDist,
       setupRegistry: registerJim,
       enabled: (sourceId) => sourceId === 'demo',
@@ -83,16 +81,14 @@ describe('GET /api/widgets/:widgetId', () => {
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({ state: 'disabled' });
     } finally {
-      destroyTestStack(stack);
+      await destroyTestStack(stack);
     }
   });
 
   it('serves cached data on a new app instance without fetching', async () => {
     const webDist = await tempWebDist();
-    const stack = createTestStack({ WEB_DIST: webDist, now: () => 1000 });
-    const dbPath = join(stack.dir, 'app.db');
-    const stackDir = stack.dir;
-    stack.store.putOk(
+    const stack = await createTestStack({ WEB_DIST: webDist, now: () => 1000 });
+    await stack.store.putOk(
       'demo',
       'clock',
       { iso: '2026-01-01T00:00:00.000Z' },
@@ -108,16 +104,24 @@ describe('GET /api/widgets/:widgetId', () => {
     };
 
     stack.scheduler.stop();
-    closeDb(stack.conn);
 
-    const stack2 = createTestStack({
+    const app2 = createApp({
       WEB_DIST: webDist,
-      now: () => 2000,
-      dbPath,
+      getSession: async () => ({ id: 'test-session', scope: 'full' as const }),
+      stack: {
+        conn: stack.conn,
+        registry: stack.registry,
+        store: stack.store,
+        runner: stack.runner,
+        scheduler: stack.scheduler,
+        enabled: (sourceId) => sourceId === 'demo',
+        getSourceConfig: () => ({}),
+        now: () => 2000,
+      },
     });
 
     try {
-      const response = await stack2.app.request('/api/widgets/demo.clock', {
+      const response = await app2.request('/api/widgets/demo.clock', {
         headers: testSessionHeaders,
       });
       expect(response.status).toBe(200);
@@ -127,8 +131,7 @@ describe('GET /api/widgets/:widgetId', () => {
       });
       expect(fetchCount).toBe(0);
     } finally {
-      destroyTestStack(stack2);
-      rmSync(stackDir, { recursive: true, force: true });
+      await destroyTestStack(stack);
     }
   });
 });

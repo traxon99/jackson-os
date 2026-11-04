@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRegistry, type Registry, registerDemo } from '@jos/core';
-import { closeDb, openDb, runMigrations } from '@jos/db';
+import { closeDb, type DbConnection, openTestDb, runMigrations } from '@jos/db';
 import type { Hono } from 'hono';
 import { type CreateAppConfig, createApp } from './app.js';
 import { createSnapshotStore, type SnapshotStore } from './data/snapshots.js';
@@ -17,7 +17,7 @@ const stubLog = {
 
 export type TestStack = {
   app: Hono;
-  conn: ReturnType<typeof openDb>;
+  conn: DbConnection;
   dir: string;
   store: SnapshotStore;
   runner: DatasetRunner;
@@ -26,18 +26,16 @@ export type TestStack = {
   now: () => number;
 };
 
-export function createTestStack(
+export async function createTestStack(
   config: Partial<CreateAppConfig> & {
     now?: () => number;
-    dbPath?: string;
     setupRegistry?: (registry: Registry) => void;
     enabled?: (sourceId: string) => boolean;
   } = {},
-): TestStack {
+): Promise<TestStack> {
   const dir = mkdtempSync(join(tmpdir(), 'jos-stack-'));
-  const dbPath = config.dbPath ?? join(dir, 'app.db');
-  const conn = openDb(dbPath);
-  runMigrations(conn.db);
+  const conn = await openTestDb();
+  await runMigrations(conn);
 
   const registry = createRegistry();
   registerDemo(registry);
@@ -88,9 +86,9 @@ export function createTestStack(
   return { app, conn, dir, store, runner, scheduler, registry, now };
 }
 
-export function destroyTestStack(stack: TestStack): void {
+export async function destroyTestStack(stack: TestStack): Promise<void> {
   stack.scheduler.stop();
-  closeDb(stack.conn);
+  await closeDb(stack.conn);
   rmSync(stack.dir, { recursive: true, force: true });
 }
 

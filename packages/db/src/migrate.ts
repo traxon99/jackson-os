@@ -1,7 +1,11 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import type { PgliteDatabase } from 'drizzle-orm/pglite';
+import { migrate as migratePglite } from 'drizzle-orm/pglite/migrator';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { migrate as migratePostgres } from 'drizzle-orm/postgres-js/migrator';
+import type { DbConnection } from './open.js';
+import type * as schema from './schema/index.js';
 
 const migrationsFolder = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -9,6 +13,11 @@ const migrationsFolder = join(
   'drizzle',
 );
 
-export function runMigrations(db: BetterSQLite3Database): void {
-  migrate(db, { migrationsFolder });
+export async function runMigrations(conn: DbConnection): Promise<void> {
+  const options = { migrationsFolder };
+  if (conn.kind === 'pglite') {
+    await migratePglite(conn.db as PgliteDatabase<typeof schema>, options);
+    return;
+  }
+  await migratePostgres(conn.db as PostgresJsDatabase<typeof schema>, options);
 }

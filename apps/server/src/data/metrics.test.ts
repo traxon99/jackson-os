@@ -1,10 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { demoAdapter } from '@jos/core';
-import { closeDb, metricPoints, openDb, runMigrations } from '@jos/db';
+import { metricPoints } from '@jos/db';
 import { describe, expect, it } from 'vitest';
 import { createRunner } from '../scheduler/run-dataset.js';
+import { createTestConn } from '../test-db.js';
 import { createSnapshotStore } from './snapshots.js';
 
 const stubLog = {
@@ -15,10 +13,7 @@ const stubLog = {
 
 describe('metrics write', () => {
   it('inserts 20 rows for the demo series dataset', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'jos-metrics-'));
-    const dbPath = join(dir, 'test.db');
-    const conn = openDb(dbPath);
-    runMigrations(conn.db);
+    const { conn, cleanup } = await createTestConn();
     const store = createSnapshotStore(conn.db);
     const runner = createRunner({
       store,
@@ -30,12 +25,11 @@ describe('metrics write', () => {
 
     try {
       await runner.run(demoAdapter, 'series', {});
-      const rows = conn.db.select().from(metricPoints).all();
+      const rows = await conn.db.select().from(metricPoints);
       expect(rows).toHaveLength(20);
       expect(rows.every((row) => row.metric === 'demo.value')).toBe(true);
     } finally {
-      closeDb(conn);
-      rmSync(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 });

@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { Registry } from '@jos/core';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { JosDatabase } from '@jos/db';
 import { Hono } from 'hono';
 import { insertActionLog } from '../data/action-log.js';
 import type { DatasetRunner } from '../scheduler/run-dataset.js';
 
 export type ActionRoutesDeps = {
   registry: Registry;
-  db: BetterSQLite3Database;
+  db: JosDatabase;
   runner: DatasetRunner;
   enabled: (sourceId: string) => boolean;
   getSourceConfig: (sourceId: string) => unknown;
@@ -61,7 +61,7 @@ export function createActionsRoutes(deps: ActionRoutesDeps): Hono {
 
     try {
       const result = await action.run(ctx, parsed.data);
-      insertActionLog(deps.db, {
+      await insertActionLog(deps.db, {
         id: randomUUID(),
         widgetId: sourceId,
         action: actionName,
@@ -81,7 +81,7 @@ export function createActionsRoutes(deps: ActionRoutesDeps): Hono {
       return c.json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'action failed';
-      insertActionLog(deps.db, {
+      await insertActionLog(deps.db, {
         id: randomUUID(),
         widgetId: sourceId,
         action: actionName,

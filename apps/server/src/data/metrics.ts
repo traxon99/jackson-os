@@ -1,8 +1,8 @@
+import type { JosDatabase } from '@jos/db';
 import { metricPoints } from '@jos/db';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export function writeMetricPoints(
-  db: BetterSQLite3Database,
+export async function writeMetricPoints(
+  db: JosDatabase,
   sourceId: string,
   points: {
     metric: string;
@@ -10,22 +10,20 @@ export function writeMetricPoints(
     value: number;
     dims?: Record<string, string>;
   }[],
-): void {
+): Promise<void> {
   if (points.length === 0) {
     return;
   }
 
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     for (const point of points) {
-      tx.insert(metricPoints)
-        .values({
-          sourceId,
-          metric: point.metric,
-          ts: point.ts,
-          value: point.value,
-          dims: point.dims ? JSON.stringify(point.dims) : null,
-        })
-        .run();
+      await tx.insert(metricPoints).values({
+        sourceId,
+        metric: point.metric,
+        ts: point.ts,
+        value: point.value,
+        dims: point.dims ? JSON.stringify(point.dims) : null,
+      });
     }
   });
 }
