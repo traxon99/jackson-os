@@ -10,6 +10,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 RUN pnpm deploy --filter server --prod /out
+RUN cd /out && node -e "import('@jos/core').then(()=>process.exit(0)).catch((e)=>{console.error(e);process.exit(1)})"
 RUN mkdir -p /out/web && cp -r apps/web/dist /out/web/dist
 RUN cp -r packages/db/drizzle /out/node_modules/@jos/db/drizzle
 RUN find /out/node_modules -type f \( -name '*.md' -o -name '*.markdown' -o -name 'LICENSE*' -o -name 'CHANGELOG*' -o -name '*.map' \) -delete \
