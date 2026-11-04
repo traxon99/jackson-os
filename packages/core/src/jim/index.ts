@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { DatasetDef, SourceAdapter, WidgetDef } from '../contracts.js';
+import { getBackend, jimBackendSchema } from './api/backend.js';
 import { getBodyMeasurements, jimBodySchema } from './api/body.js';
 import { getDpr, jimDprSchema } from './api/dpr.js';
 import { getLifts, jimLiftsSchema } from './api/lifts.js';
@@ -36,6 +37,7 @@ type JimPrsData = z.infer<typeof jimPrsListSchema>;
 type JimLiftsData = z.infer<typeof jimLiftsSchema>;
 type JimBodyData = z.infer<typeof jimBodySchema>;
 type JimNextData = z.infer<typeof nextSchema>;
+type JimBackendData = z.infer<typeof jimBackendSchema>;
 
 const statusDataset: DatasetDef<JimConfig, JimStatusData> = {
   schema: jimStatusSchema,
@@ -169,6 +171,21 @@ const bodyDataset: DatasetDef<JimConfig, JimBodyData> = {
 };
 
 // Read-only: Jackson OS never starts or changes a workout (traxon99/jim#735, ADR-022).
+const backendDataset: DatasetDef<JimConfig, JimBackendData> = {
+  schema: jimBackendSchema,
+  refresh: {
+    everyMs: 5 * 60_000,
+    staleAfterMs: 15 * 60_000,
+    maxBackoffMs: 60 * 60_000,
+  },
+  fetch: async (ctx) => {
+    if (ctx.signal.aborted) {
+      throw new Error('aborted');
+    }
+    return getBackend(ctx);
+  },
+};
+
 const nextDataset: DatasetDef<JimConfig, JimNextData> = {
   schema: nextSchema,
   refresh: { everyMs: 30 * 60_000, staleAfterMs: 2 * 60 * 60_000 },
@@ -196,6 +213,7 @@ export const jimAdapter: SourceAdapter<JimConfig> = {
     lifts: liftsDataset,
     body: bodyDataset,
     next: nextDataset,
+    backend: backendDataset,
   },
   healthCheck: async (ctx) => {
     try {
@@ -277,6 +295,16 @@ export const jimWidgets: WidgetDef[] = [
     sizes: {
       default: { w: 4, h: 3 },
       min: { w: 3, h: 2 },
+    },
+  },
+  {
+    id: 'jim.backend',
+    source: 'jim',
+    dataset: 'backend',
+    title: 'backend',
+    sizes: {
+      default: { w: 6, h: 4 },
+      min: { w: 4, h: 3 },
     },
   },
 ];

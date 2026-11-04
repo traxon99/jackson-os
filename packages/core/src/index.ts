@@ -20,6 +20,7 @@ export {
   registerDemo,
 } from './demo/index.js';
 export { formatUpstreamError, UpstreamError } from './errors.js';
+export type { JimBackend, JimBackendService } from './jim/api/backend.js';
 export type { JimBody } from './jim/api/body.js';
 export type { JimDpr } from './jim/api/dpr.js';
 export type { JimLifts } from './jim/api/lifts.js';

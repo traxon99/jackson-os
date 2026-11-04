@@ -29,6 +29,7 @@ After [traxon99/jim#736](https://github.com/traxon99/jim/issues/736) ships: Jim 
 | `GET /v1/body-measurements` | [`packages/core/src/jim/api/body.ts`](../../packages/core/src/jim/api/body.ts)                     | [traxon99/jim#742](https://github.com/traxon99/jim/issues/742)           |
 | `GET /v1/plan`              | [`packages/core/src/jim/api/plan.ts`](../../packages/core/src/jim/api/plan.ts)                     | [traxon99/jim#742](https://github.com/traxon99/jim/issues/742) _(guess)_ |
 | `GET /v1/dpr`               | [`packages/core/src/jim/api/dpr.ts`](../../packages/core/src/jim/api/dpr.ts)                       | [traxon99/jim#742](https://github.com/traxon99/jim/issues/742) _(guess)_ |
+| `GET /v1/backend`           | [`packages/core/src/jim/api/backend.ts`](../../packages/core/src/jim/api/backend.ts)               | _(guess — Vercel, Supabase, Cloudflare, Fly)_                            |
 
 When an endpoint lands, compare its live JSON to the Zod schema and update fixtures if they differ.
 
@@ -36,15 +37,16 @@ When an endpoint lands, compare its live JSON to the Zod schema and update fixtu
 
 Defined in [`packages/core/src/jim/index.ts`](../../packages/core/src/jim/index.ts).
 
-| Dataset key | Refresh (`everyMs` / stale)     | Widget id    | Widget title |
-| ----------- | ------------------------------- | ------------ | ------------ |
-| `status`    | 5m / 15m stale                  | `jim.status` | jim          |
-| `training`  | 15m / 1h stale (weeks + streak) | `jim.week`   | training     |
-| `workouts`  | 15m / 1h stale                  | `jim.recent` | workouts     |
-| `prs`       | 1h / 6h stale                   | `jim.prs`    | prs          |
-| `lifts`     | 6h / 24h stale                  | `jim.lifts`  | lifts        |
-| `body`      | 6h / 24h stale                  | `jim.body`   | body         |
-| `next`      | 30m / 2h stale (plan + dpr)     | `jim.next`   | next         |
+| Dataset key | Refresh (`everyMs` / stale)     | Widget id     | Widget title |
+| ----------- | ------------------------------- | ------------- | ------------ |
+| `status`    | 5m / 15m stale                  | `jim.status`  | jim          |
+| `training`  | 15m / 1h stale (weeks + streak) | `jim.week`    | training     |
+| `workouts`  | 15m / 1h stale                  | `jim.recent`  | workouts     |
+| `prs`       | 1h / 6h stale                   | `jim.prs`     | prs          |
+| `lifts`     | 6h / 24h stale                  | `jim.lifts`   | lifts        |
+| `body`      | 6h / 24h stale                  | `jim.body`    | body         |
+| `next`      | 30m / 2h stale (plan + dpr)     | `jim.next`    | next         |
+| `backend`   | 5m / 15m stale                  | `jim.backend` | backend      |
 
 React views: [`apps/web/src/widgets/jim/`](../../apps/web/src/widgets/jim/).
 
@@ -59,6 +61,7 @@ These fields match fixture examples but are not confirmed against production Jim
 - **`/v1/body-measurements`:** `change` on a kind, long `points` arrays
 - **`/v1/workouts`:** `gym`, `prCount`, `webUrl`
 - **`/v1/prs`:** `tier`, `previousValue` nullability
+- **`/v1/backend`:** per-provider optional blocks (`cron`, `analytics`, `waf`, `image`, Supabase feature flags)
 
 Mark items off after comparing to the shipped endpoint.
 
