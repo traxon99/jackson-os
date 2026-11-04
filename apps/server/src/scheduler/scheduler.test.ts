@@ -48,10 +48,14 @@ describe('createScheduler', () => {
 
     let shouldFail = true;
     const runner: DatasetRunner = {
-      run: async (source, datasetKey) => {
+      run: async (
+        source,
+        datasetKey,
+        _config,
+      ): Promise<{ retryAfterMs?: number } | undefined> => {
         if (shouldFail) {
           store.putError(source.id, datasetKey, 'fail');
-          return;
+          return undefined;
         }
         store.putOk(
           source.id,
@@ -60,6 +64,7 @@ describe('createScheduler', () => {
           Date.now(),
           Date.now() + 2000,
         );
+        return undefined;
       },
     };
 
@@ -131,12 +136,8 @@ describe('createScheduler', () => {
     });
 
     const runner: DatasetRunner = {
-      run: async (source, datasetKey) => {
-        store.putError(
-          source.id,
-          datasetKey,
-          'upstream 429 · retry in 3m',
-        );
+      run: async (source, datasetKey, _config) => {
+        store.putError(source.id, datasetKey, 'upstream 429 · retry in 3m');
         return { retryAfterMs: 180_000 };
       },
     };

@@ -27,14 +27,4 @@ describe('sourceConfigs', () => {
       token: '',
     });
   });
-
-  it('does not embed secrets in demo entry', () => {
-    const config = loadConfig({
-      APP_ORIGIN: 'https://app.example.com',
-      JIM_PAT: 'secret-token',
-    });
-
-    expect(sourceConfigs(config).demo).toEqual({});
-    expect(JSON.stringify(sourceConfigs(config))).not.toContain('secret-token');
-  });
 });

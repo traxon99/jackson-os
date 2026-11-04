@@ -16,7 +16,9 @@ describe('UpstreamError', () => {
 
   it('formats errors without retry-after using the message', () => {
     const err = new UpstreamError('not found', { status: 404 });
-    expect(formatUpstreamError(err, new Date())).toBe('upstream 404 · not found');
+    expect(formatUpstreamError(err, new Date())).toBe(
+      'upstream 404 · not found',
+    );
   });
 
   it('never includes raw headers in formatted output', () => {

@@ -1,8 +1,6 @@
 import type { AppConfig } from './config.js';
 
-export function sourceConfigs(
-  config: AppConfig,
-): Record<string, unknown> {
+export function sourceConfigs(config: AppConfig): Record<string, unknown> {
   return {
     demo: {},
     jim: {

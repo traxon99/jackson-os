@@ -24,10 +24,7 @@ const configSchema = z.object({
   DATA_DIR: z.string().default('/data'),
   RP_ID: z.string().default('os.jacksonyanek.com'),
   SETUP_TOKEN: z.string().min(32).optional(),
-  JIM_API_URL: z
-    .string()
-    .url()
-    .default('https://jim-mcp.fly.dev'),
+  JIM_API_URL: z.string().url().default('https://jim-mcp.fly.dev'),
   JIM_PAT: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),

@@ -19,6 +19,6 @@ export {
   demoWidgets,
   registerDemo,
 } from './demo/index.js';
-export { createRegistry, type Registry } from './registry.js';
 export { formatUpstreamError, UpstreamError } from './errors.js';
+export { createRegistry, type Registry } from './registry.js';
 export { relativeTime } from './time.js';

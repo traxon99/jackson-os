@@ -15,13 +15,16 @@ export function createRunner(deps: {
   now: () => number;
   fetchImpl: typeof fetch;
 }) {
-  const inflight = new Map<string, Promise<void>>();
+  const inflight = new Map<
+    string,
+    Promise<{ retryAfterMs?: number } | undefined>
+  >();
 
   async function run<TConfig>(
     source: SourceAdapter<TConfig>,
     datasetKey: string,
     config: TConfig,
-  ): Promise<{ retryAfterMs?: number } | void> {
+  ): Promise<{ retryAfterMs?: number } | undefined> {
     const flightKey = `${source.id}:${datasetKey}`;
     const existing = inflight.get(flightKey);
     if (existing !== undefined) {
@@ -39,7 +42,7 @@ export function createRunner(deps: {
     source: SourceAdapter<TConfig>,
     datasetKey: string,
     config: TConfig,
-  ): Promise<{ retryAfterMs?: number } | void> {
+  ): Promise<{ retryAfterMs?: number } | undefined> {
     const dataset = source.datasets[datasetKey];
     if (dataset === undefined) {
       throw new Error(`unknown dataset: ${datasetKey}`);
