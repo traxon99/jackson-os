@@ -30,6 +30,8 @@ export function createTestStack(
   config: Partial<CreateAppConfig> & {
     now?: () => number;
     dbPath?: string;
+    setupRegistry?: (registry: Registry) => void;
+    enabled?: (sourceId: string) => boolean;
   } = {},
 ): TestStack {
   const dir = mkdtempSync(join(tmpdir(), 'jos-stack-'));
@@ -39,9 +41,11 @@ export function createTestStack(
 
   const registry = createRegistry();
   registerDemo(registry);
+  config.setupRegistry?.(registry);
 
   const store = createSnapshotStore(conn.db);
   const now = config.now ?? (() => Date.now());
+  const enabled = config.enabled ?? ((sourceId) => sourceId === 'demo');
 
   const runner = createRunner({
     store,
@@ -55,7 +59,7 @@ export function createTestStack(
     registry,
     runner,
     store,
-    enabled: (sourceId) => sourceId === 'demo',
+    enabled,
     random: () => 0.5,
     now,
     getSourceConfig: () => ({}),
@@ -75,7 +79,7 @@ export function createTestStack(
       store,
       runner,
       scheduler,
-      enabled: (sourceId) => sourceId === 'demo',
+      enabled,
       getSourceConfig: () => ({}),
       now,
     },
