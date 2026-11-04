@@ -1,14 +1,11 @@
-import { PGlite } from '@electric-sql/pglite';
-import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema/index.js';
 import type { JosDatabase } from './types.js';
 
 export type DbConnection = {
-  kind: 'postgres' | 'pglite';
-  sql?: postgres.Sql;
-  client?: PGlite;
+  kind: 'postgres';
+  sql: postgres.Sql;
   db: JosDatabase;
 };
 
@@ -21,19 +18,6 @@ export async function openDb(databaseUrl: string): Promise<DbConnection> {
   return { kind: 'postgres', sql, db };
 }
 
-/** In-memory Postgres for unit tests (PGlite). */
-export async function openTestDb(): Promise<DbConnection> {
-  const client = new PGlite();
-  const db = drizzlePglite(client, { schema });
-  return { kind: 'pglite', client, db };
-}
-
 export async function closeDb(conn: DbConnection): Promise<void> {
-  if (conn.kind === 'postgres' && conn.sql !== undefined) {
-    await conn.sql.end({ timeout: 5 });
-    return;
-  }
-  if (conn.client !== undefined) {
-    await conn.client.close();
-  }
+  await conn.sql.end({ timeout: 5 });
 }

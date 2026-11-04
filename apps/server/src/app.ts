@@ -1,5 +1,5 @@
 import type { Registry } from '@jos/core';
-import type { DbConnection } from '@jos/db';
+import type { JosDatabase } from '@jos/db';
 import { Hono } from 'hono';
 import type { Logger } from 'pino';
 import type { SessionService } from './auth/sessions.js';
@@ -33,7 +33,7 @@ export type AuthRouteConfig = Pick<
   Partial<Pick<AppConfig, 'TRUST_CLOUDFLARE'>>;
 
 export type AppStack = {
-  conn: DbConnection;
+  conn: { db: JosDatabase };
   registry: Registry;
   store: SnapshotStore;
   runner: DatasetRunner;

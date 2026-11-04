@@ -1,5 +1,5 @@
 import { createRegistry, registerDemo, registerJim } from '@jos/core';
-import { closeDb, openDb, openTestDb, runMigrations } from '@jos/db';
+import { closeDb, openDb, runMigrations } from '@jos/db';
 import type { Hono } from 'hono';
 import { type AppStack, createApp } from './app.js';
 import {
@@ -53,9 +53,17 @@ export async function buildApp(
   });
 
   const dbConn = config.DATABASE_URL.startsWith('pglite:')
-    ? await openTestDb()
-    : await openDb(config.DATABASE_URL);
-  await runMigrations(dbConn);
+    ? await (async () => {
+        const { openTestDb, runTestMigrations } = await import('@jos/db/test');
+        const testConn = await openTestDb();
+        await runTestMigrations(testConn);
+        return testConn;
+      })()
+    : await (async () => {
+        const conn = await openDb(config.DATABASE_URL);
+        await runMigrations(conn);
+        return conn;
+      })();
 
   const registry = createRegistry();
   registerDemo(registry);
@@ -133,6 +141,11 @@ export async function buildApp(
   }
 
   lifecycle.registerStopHook(async () => {
+    if (dbConn.kind === 'pglite') {
+      const { closeTestDb } = await import('@jos/db/test');
+      await closeTestDb(dbConn);
+      return;
+    }
     await closeDb(dbConn);
   });
 
