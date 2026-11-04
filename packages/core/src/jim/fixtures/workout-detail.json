@@ -1,0 +1,45 @@
+{
+  "id": "w1",
+  "name": "Push A",
+  "startedAt": "2026-11-03T18:00:00Z",
+  "endedAt": "2026-11-03T19:15:00Z",
+  "exercises": [
+    {
+      "exerciseId": "ex_bench",
+      "name": "Bench Press",
+      "sets": [
+        {
+          "kind": "warmup",
+          "weight": 135,
+          "reps": 10
+        },
+        {
+          "kind": "working",
+          "weight": 185,
+          "reps": 8,
+          "rpe": 8,
+          "isPr": true
+        },
+        {
+          "kind": "working",
+          "weight": 195,
+          "reps": 5,
+          "rir": 2
+        }
+      ]
+    },
+    {
+      "exerciseId": "ex_ohp",
+      "name": "Overhead Press",
+      "sets": [
+        {
+          "kind": "working",
+          "weight": 95,
+          "reps": 10,
+          "durationSeconds": null,
+          "distance": null
+        }
+      ]
+    }
+  ]
+}

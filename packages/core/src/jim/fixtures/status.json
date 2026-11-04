@@ -1,0 +1,15 @@
+{
+  "user": {
+    "username": "jackson",
+    "units": "lb",
+    "weekStart": 1,
+    "timeZone": "America/Chicago"
+  },
+  "lastSyncedAt": "2026-11-03T22:41:09Z",
+  "activeWorkout": {
+    "id": "sess_active_001",
+    "name": "Push A",
+    "startedAt": "2026-11-03T22:10:00Z"
+  },
+  "tokenScope": "read"
+}

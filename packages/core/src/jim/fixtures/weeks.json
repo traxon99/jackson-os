@@ -1,0 +1,48 @@
+{
+  "weeks": [
+    {
+      "weekStart": "2026-10-27",
+      "workouts": 4,
+      "workingSets": 48,
+      "volume": 42500,
+      "durationMinutes": 215,
+      "muscles": [
+        {
+          "muscle": "chest",
+          "sets": 12,
+          "target": { "low": 10, "high": 16 },
+          "status": "within"
+        },
+        {
+          "muscle": "back",
+          "sets": 14,
+          "target": { "low": 12, "high": 18 },
+          "status": "within"
+        }
+      ],
+      "topExercises": [
+        {
+          "exerciseId": "ex_bench",
+          "name": "Bench Press",
+          "sets": 8,
+          "volume": 12000
+        },
+        {
+          "exerciseId": "ex_squat",
+          "name": "Squat",
+          "sets": 6,
+          "volume": 15000
+        }
+      ]
+    },
+    {
+      "weekStart": "2026-10-20",
+      "workouts": 0,
+      "workingSets": 0,
+      "volume": 0,
+      "durationMinutes": 0,
+      "muscles": [],
+      "topExercises": []
+    }
+  ]
+}
