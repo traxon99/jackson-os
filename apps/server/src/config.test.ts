@@ -9,10 +9,13 @@ import {
   sourceStatus,
 } from './config.js';
 
+const testDbUrl = 'postgres://postgres:postgres@127.0.0.1:5432/jackson_os_test';
+
 describe('SECRET_KEYS', () => {
   it('lists all secret env keys', () => {
     expect(SECRET_KEYS).toEqual([
       'SETUP_TOKEN',
+      'CRON_SECRET',
       'JIM_PAT',
       'GITHUB_TOKEN',
       'CLOUDFLARE_API_TOKEN',
@@ -86,17 +89,21 @@ describe('loadConfig', () => {
     }
   });
 
-  it('applies defaults when APP_ORIGIN is set', () => {
-    const config = loadConfig({ APP_ORIGIN: 'https://app.example.com' });
+  it('applies defaults when APP_ORIGIN and DATABASE_URL are set', () => {
+    const config = loadConfig({
+      APP_ORIGIN: 'https://app.example.com',
+      DATABASE_URL: testDbUrl,
+    });
 
     expect(config).toEqual({
       NODE_ENV: 'development',
       PORT: 8080,
       APP_ORIGIN: 'https://app.example.com',
       WEB_DIST: resolveWebDist('../web/dist'),
-      DATA_DIR: '/data',
+      DATABASE_URL: testDbUrl,
       RP_ID: 'os.jacksonyanek.com',
       SETUP_TOKEN: undefined,
+      CRON_SECRET: undefined,
       JIM_API_URL: 'https://jim-mcp.fly.dev',
       JIM_PAT: undefined,
       GITHUB_TOKEN: undefined,
@@ -111,6 +118,7 @@ describe('loadConfig', () => {
     const config = loadConfig(
       {
         APP_ORIGIN: 'https://app.example.com',
+        DATABASE_URL: testDbUrl,
         SETUP_TOKEN_FILE: '/secrets/setup',
       },
       () => `${token}\n`,
@@ -126,6 +134,7 @@ describe('loadConfig', () => {
     try {
       loadConfig({
         APP_ORIGIN: 'https://app.example.com',
+        DATABASE_URL: testDbUrl,
         SETUP_TOKEN: secret,
       });
       expect.fail('expected ConfigError');
@@ -139,7 +148,10 @@ describe('loadConfig', () => {
 });
 
 describe('sourceStatus', () => {
-  const base = loadConfig({ APP_ORIGIN: 'https://app.example.com' });
+  const base = loadConfig({
+    APP_ORIGIN: 'https://app.example.com',
+    DATABASE_URL: testDbUrl,
+  });
 
   it('marks sources disabled when tokens are missing', () => {
     expect(sourceStatus(base)).toEqual({
@@ -193,7 +205,10 @@ describe('sourceStatus', () => {
 describe('logDisabledSources', () => {
   it('logs each disabled source once', () => {
     const messages: string[] = [];
-    const config = loadConfig({ APP_ORIGIN: 'https://app.example.com' });
+    const config = loadConfig({
+      APP_ORIGIN: 'https://app.example.com',
+      DATABASE_URL: testDbUrl,
+    });
 
     logDisabledSources(config, (message) => messages.push(message));
 
