@@ -17,7 +17,10 @@ vi.mock('@simplewebauthn/server', () => ({
   verifyRegistrationResponse: vi.fn(),
 }));
 
-import { verifyRegistrationResponse } from '@simplewebauthn/server';
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+} from '@simplewebauthn/server';
 
 const testOrigin = 'http://127.0.0.1';
 
@@ -63,6 +66,7 @@ async function postInit() {
 
 describe('POST /api/auth/register', () => {
   beforeEach(() => {
+    vi.mocked(generateRegistrationOptions).mockClear();
     vi.mocked(verifyRegistrationResponse).mockReset();
   });
 
@@ -91,6 +95,12 @@ describe('POST /api/auth/register', () => {
       expect(response.status).toBe(200);
       expect(response.headers.get('set-cookie')).toContain(
         CHALLENGE_COOKIE_NAME,
+      );
+      expect(vi.mocked(generateRegistrationOptions)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preferredAuthenticatorType: 'remoteDevice',
+          userDisplayName: 'jackson',
+        }),
       );
     } finally {
       await cleanup();

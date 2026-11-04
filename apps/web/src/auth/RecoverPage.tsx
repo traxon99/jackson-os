@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { apiPost } from '../lib/api.js';
+import { PasskeyRegistrationHelp } from './PasskeyRegistrationHelp.js';
 import { RecoveryCodesView } from './RecoveryCodesView.js';
 import { invalidateAuth } from './useAuth.js';
 import { registerPasskey } from './webauthn.js';
@@ -61,12 +62,13 @@ export function RecoverPage() {
       <main className="auth-page">
         <h1>Create a new passkey</h1>
         <p>
-          Your recovery code was accepted. Register a passkey to finish
-          recovery.
+          Your recovery code was accepted. Register a passkey on your phone by
+          scanning the QR code your browser shows.
         </p>
         <button type="button" disabled={busy} onClick={onCreatePasskey}>
           Create passkey
         </button>
+        {busy ? <PasskeyRegistrationHelp /> : null}
         {error !== null ? <p className="error">{error}</p> : null}
       </main>
     );
