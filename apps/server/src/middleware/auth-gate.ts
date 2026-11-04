@@ -32,7 +32,9 @@ export function authGate(getSession: GetSession): MiddlewareHandler {
       pathname === '/api/health' ||
       pathname === '/api/cron/tick' ||
       pathname === '/api/auth' ||
-      pathname.startsWith('/api/auth/')
+      pathname.startsWith('/api/auth/') ||
+      pathname === '/api/agent' ||
+      pathname.startsWith('/api/agent/')
     ) {
       await next();
       return;

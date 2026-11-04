@@ -9,6 +9,12 @@ export function originCheck(appOrigin: string): MiddlewareHandler {
       return;
     }
 
+    const pathname = new URL(c.req.url).pathname;
+    if (pathname === '/api/agent' || pathname.startsWith('/api/agent/')) {
+      await next();
+      return;
+    }
+
     const origin = c.req.header('Origin');
     if (origin === undefined || origin !== appOrigin) {
       return c.body(null, 403);

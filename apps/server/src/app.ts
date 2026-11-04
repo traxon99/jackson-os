@@ -14,6 +14,7 @@ import { securityHeadersMiddleware } from './middleware/headers.js';
 import { originCheck } from './middleware/origin.js';
 import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { requestLogMiddleware } from './middleware/request-log.js';
+import { mountAgentRoutes } from './routes/agent.js';
 import { mountAuthSessionRoutes } from './routes/auth-session.js';
 import { mountAuthRoutes } from './routes/mount-auth.js';
 import { mountDataRoutes } from './routes/mount-data.js';
@@ -45,7 +46,10 @@ export type AppStack = {
 
 export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
   Partial<
-    Pick<AppConfig, 'APP_ORIGIN' | 'TRUST_CLOUDFLARE' | 'CRON_SECRET'>
+    Pick<
+      AppConfig,
+      'APP_ORIGIN' | 'TRUST_CLOUDFLARE' | 'CRON_SECRET' | 'AGENT_API_TOKEN'
+    >
   > & {
     logger?: Logger;
     getSession?: GetSession;
@@ -112,6 +116,10 @@ export function createApp(config: CreateAppConfig) {
   if (config.stack !== undefined) {
     mountDataRoutes(api, config.stack, {
       CRON_SECRET: config.cronSecret ?? config.CRON_SECRET,
+    });
+    mountAgentRoutes(api, config.stack, {
+      AGENT_API_TOKEN: config.AGENT_API_TOKEN,
+      TRUST_CLOUDFLARE: resolved.TRUST_CLOUDFLARE,
     });
   } else {
     api.all('*', (c) => c.json({ error: 'Not Found' }, 404));

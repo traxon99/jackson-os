@@ -16,6 +16,7 @@ describe('SECRET_KEYS', () => {
     expect(SECRET_KEYS).toEqual([
       'SETUP_TOKEN',
       'CRON_SECRET',
+      'AGENT_API_TOKEN',
       'JIM_PAT',
       'GITHUB_TOKEN',
       'CLOUDFLARE_API_TOKEN',
