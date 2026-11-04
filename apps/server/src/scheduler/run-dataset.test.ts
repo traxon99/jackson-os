@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SourceAdapter } from '@jos/core';
+import { type SourceAdapter, UpstreamError } from '@jos/core';
 import { closeDb, openDb, runMigrations } from '@jos/db';
 import { describe, expect, it, vi } from 'vitest';
 import { createSnapshotStore } from '../data/snapshots.js';
@@ -101,6 +101,46 @@ describe('createRunner', () => {
       expect(row?.status).toBe('error');
     } finally {
       vi.useRealTimers();
+      closeDb(conn);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('records formatted UpstreamError on upstream failure', async () => {
+    const { conn, dir, store } = testDb();
+    const source: SourceAdapter = {
+      id: 'demo',
+      displayName: 'Demo',
+      configSchema: { parse: () => ({}) } as never,
+      datasets: {
+        rate: {
+          schema: { parse: (v: unknown) => v } as never,
+          refresh: { everyMs: 1000, staleAfterMs: 2000 },
+          fetch: async () => {
+            throw new UpstreamError('rate limited', {
+              status: 429,
+              retryAfterMs: 180_000,
+            });
+          },
+        },
+      },
+    };
+
+    const runner = createRunner({
+      store,
+      db: conn.db,
+      log: stubLog,
+      now: () => Date.now(),
+      fetchImpl: globalThis.fetch,
+    });
+
+    try {
+      const result = await runner.run(source, 'rate', {});
+      expect(result).toEqual({ retryAfterMs: 180_000 });
+      const row = store.get('demo', 'rate');
+      expect(row?.status).toBe('error');
+      expect(row?.error).toBe('upstream 429 · retry in 3m');
+    } finally {
       closeDb(conn);
       rmSync(dir, { recursive: true, force: true });
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig, resolveWebDist } from './config.js';
+import { loadConfig } from './config.js';
 import { sourceConfigs } from './sources.js';
 
 describe('sourceConfigs', () => {

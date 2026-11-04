@@ -41,7 +41,11 @@ export function createScheduler(deps: {
     return Math.min(everyMs * 2 ** failureCount, cap);
   }
 
-  function scheduleJob(sourceId: string, datasetKey: string): void {
+  function scheduleJob(
+    sourceId: string,
+    datasetKey: string,
+    retryAfterMs?: number,
+  ): void {
     const key = jobKey(sourceId, datasetKey);
     const existingTimer = timers.get(key);
     if (existingTimer !== undefined) {
@@ -63,8 +67,12 @@ export function createScheduler(deps: {
       failureCount,
       dataset.refresh.maxBackoffMs,
     );
-    const delay = delayWithJitter(baseDelay, deps.random);
-    lastScheduledDelay.set(key, baseDelay);
+    const delayBase =
+      retryAfterMs !== undefined
+        ? Math.max(baseDelay, retryAfterMs)
+        : baseDelay;
+    const delay = delayWithJitter(delayBase, deps.random);
+    lastScheduledDelay.set(key, delayBase);
     nextFetchAtByJob.set(key, deps.now() + delay);
 
     const timer = setTimeout(() => {
@@ -80,8 +88,14 @@ export function createScheduler(deps: {
       return;
     }
 
+    let retryAfterMs: number | undefined;
     try {
-      await deps.runner.run(source, datasetKey, deps.getSourceConfig(sourceId));
+      const runResult = await deps.runner.run(
+        source,
+        datasetKey,
+        deps.getSourceConfig(sourceId),
+      );
+      retryAfterMs = runResult?.retryAfterMs;
       const row = deps.store.get(sourceId, datasetKey);
       if (row?.status === 'ok') {
         failures.set(key, 0);
@@ -91,7 +105,7 @@ export function createScheduler(deps: {
     } catch {
       failures.set(key, (failures.get(key) ?? 0) + 1);
     } finally {
-      scheduleJob(sourceId, datasetKey);
+      scheduleJob(sourceId, datasetKey, retryAfterMs);
     }
   }
 
