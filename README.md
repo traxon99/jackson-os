@@ -1,6 +1,6 @@
 # jackson-os
 
-Personal operating system monorepo (Vite + React web, Hono API, Supabase Postgres). See [AGENTS.md](AGENTS.md) for layout and day-to-day commands.
+Personal operating system monorepo (Vite + React web, Hono API, Supabase Postgres). See [AGENTS.md](AGENTS.md) for layout and day-to-day commands. External assistants (Grok Bot) integrate via [docs/AGENT-INTEGRATION.md](docs/AGENT-INTEGRATION.md).
 
 **Requirements:** Node 22, pnpm 9 (`corepack enable` if needed). Docker is optional ([Compose](#compose-homelab) mode).
 
@@ -67,6 +67,7 @@ On the host, `./deploy/watch-and-deploy.sh` rebuilds Compose whenever `main` mov
 | `RP_ID`                                                  | Hostname from `.env` (default in example) | Hostname of `APP_ORIGIN` (default `os.jacksonyanek.com`) |
 | `SETUP_TOKEN`                                            | Optional env var                          | Via `SETUP_TOKEN_FILE=/run/secrets/setup_token`          |
 | `CRON_SECRET`                                            | Optional                                  | Optional; the in-process scheduler refreshes datasets    |
+| `AGENT_API_TOKEN`                                        | Optional                                  | Optional; bearer for `/api/agent` (Grok Bot integration) |
 | `JIM_PAT`, `JIM_API_URL`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional env vars                         | Optional env vars on the `app` service                   |
 
 Copy [.env.example](.env.example) for local development.

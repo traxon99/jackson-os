@@ -71,7 +71,9 @@ export async function createTestStack(
   const app = createApp({
     ...config,
     WEB_DIST: webDist,
-    getSession: async () => ({ id: 'test-session', scope: 'full' as const }),
+    getSession:
+      config.getSession ??
+      (async () => ({ id: 'test-session', scope: 'full' as const })),
     stack: {
       conn,
       registry,

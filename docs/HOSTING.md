@@ -47,15 +47,16 @@ The app listens on port 8080. `APP_ORIGIN` must be the URL browsers use (`http:/
 
 ### Environment variables
 
-| Variable                                  | Required         | Notes                                                                                    |
-| ----------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                            | Yes              | Supabase session, direct, or pooler URI                                                  |
-| `APP_ORIGIN`                              | Yes              | Origin browsers use, e.g. `https://os.jacksonyanek.com` or `http://localhost:8080`       |
-| `RP_ID`                                   | Yes              | WebAuthn RP ID (hostname only), e.g. `os.jacksonyanek.com`                               |
-| `SETUP_TOKEN`                             | First start      | ≥32 chars; one-time setup. Compose reads `SETUP_TOKEN_FILE=/run/secrets/setup_token`     |
-| `CRON_SECRET`                             | No               | Optional bearer for `POST /api/cron/tick`. Dataset refresh uses the in-process scheduler |
-| `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS                                                    |
-| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional         | Same as local                                                                            |
+| Variable                                  | Required         | Notes                                                                                         |
+| ----------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                            | Yes              | Supabase session, direct, or pooler URI                                                       |
+| `APP_ORIGIN`                              | Yes              | Origin browsers use, e.g. `https://os.jacksonyanek.com` or `http://localhost:8080`            |
+| `RP_ID`                                   | Yes              | WebAuthn RP ID (hostname only), e.g. `os.jacksonyanek.com`                                    |
+| `SETUP_TOKEN`                             | First start      | ≥32 chars; one-time setup. Compose reads `SETUP_TOKEN_FILE=/run/secrets/setup_token`          |
+| `CRON_SECRET`                             | No               | Optional bearer for `POST /api/cron/tick`. Dataset refresh uses the in-process scheduler      |
+| `AGENT_API_TOKEN`                         | No               | Optional bearer for `/api/agent` (Grok Bot). See [AGENT-INTEGRATION.md](AGENT-INTEGRATION.md) |
+| `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS                                                         |
+| `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional         | Same as local                                                                                 |
 
 `DISABLE_SCHEDULER=true` turns the in-process scheduler off.
 

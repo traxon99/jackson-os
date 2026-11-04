@@ -25,6 +25,7 @@ const configSchema = z.object({
   RP_ID: z.string().default('os.jacksonyanek.com'),
   SETUP_TOKEN: z.string().min(32).optional(),
   CRON_SECRET: z.string().min(16).optional(),
+  AGENT_API_TOKEN: z.string().min(32).optional(),
   JIM_API_URL: z.string().url().default('https://jim-mcp.fly.dev'),
   JIM_PAT: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
@@ -41,6 +42,7 @@ export type AppConfig = z.infer<typeof configSchema>;
 export const SECRET_KEYS = [
   'SETUP_TOKEN',
   'CRON_SECRET',
+  'AGENT_API_TOKEN',
   'JIM_PAT',
   'GITHUB_TOKEN',
   'CLOUDFLARE_API_TOKEN',
@@ -165,6 +167,7 @@ export function loadConfig(
     RP_ID: resolvedEnv.RP_ID,
     SETUP_TOKEN: resolvedEnv.SETUP_TOKEN,
     CRON_SECRET: resolvedEnv.CRON_SECRET,
+    AGENT_API_TOKEN: resolvedEnv.AGENT_API_TOKEN,
     JIM_API_URL: resolvedEnv.JIM_API_URL,
     JIM_PAT: resolvedEnv.JIM_PAT,
     GITHUB_TOKEN: resolvedEnv.GITHUB_TOKEN,
