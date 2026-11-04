@@ -174,9 +174,11 @@ export function Rows({
 export function Row({
   children,
   href,
+  linkCell = 0,
 }: {
   children: ReactNode;
   href?: string;
+  linkCell?: number;
 }) {
   const cells = Children.toArray(children);
   return (
@@ -186,7 +188,7 @@ export function Row({
       {cells.map((child, index) => {
         const key = isValidElement(child) ? child.key : index;
         const content =
-          index === 0 && href !== undefined ? (
+          index === linkCell && href !== undefined ? (
             <a href={href} target="_blank" rel="noopener noreferrer">
               {child}
             </a>
