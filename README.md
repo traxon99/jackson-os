@@ -46,8 +46,10 @@ The app listens on [http://localhost:8080](http://localhost:8080).
 Optional Cloudflare tunnel (requires `deploy/secrets/tunnel_token`):
 
 ```bash
-docker compose -f deploy/compose.yaml --profile tunnel up
+docker compose -f deploy/compose.yaml -f deploy/compose.tunnel.yaml --profile tunnel up
 ```
+
+`compose.tunnel.yaml` sets `TRUST_CLOUDFLARE=true` so rate limits use `CF-Connecting-IP` behind the tunnel.
 
 ## Production (this machine)
 

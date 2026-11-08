@@ -8,6 +8,7 @@
 # Env:
 #   REMOTE=origin   BRANCH=main   INTERVAL_SEC=60
 #   COMPOSE_FILE=deploy/compose.yaml
+#   COMPOSE_OVERRIDE=deploy/compose.tunnel.yaml   # optional second -f (production tunnel host)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,13 +18,23 @@ REMOTE="${REMOTE:-origin}"
 BRANCH="${BRANCH:-main}"
 INTERVAL_SEC="${INTERVAL_SEC:-60}"
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/compose.yaml}"
+COMPOSE_OVERRIDE="${COMPOSE_OVERRIDE:-}"
+
+compose_args=(-f "$COMPOSE_FILE")
+if [[ -n "$COMPOSE_OVERRIDE" ]]; then
+  compose_args+=(-f "$COMPOSE_OVERRIDE")
+fi
 
 if ! git remote get-url "$REMOTE" >/dev/null 2>&1; then
   echo "Remote $REMOTE not configured." >&2
   exit 1
 fi
 
-echo "Watching $REMOTE/$BRANCH every ${INTERVAL_SEC}s; compose file $COMPOSE_FILE"
+if [[ -n "$COMPOSE_OVERRIDE" ]]; then
+  echo "Watching $REMOTE/$BRANCH every ${INTERVAL_SEC}s; compose $COMPOSE_FILE + $COMPOSE_OVERRIDE"
+else
+  echo "Watching $REMOTE/$BRANCH every ${INTERVAL_SEC}s; compose file $COMPOSE_FILE"
+fi
 
 while true; do
   git fetch "$REMOTE" "$BRANCH" --quiet || true
@@ -33,7 +44,7 @@ while true; do
     if [[ "$local_sha" != "$remote_sha" ]]; then
       echo "→ $REMOTE/$BRANCH moved to ${remote_sha:0:7}; pulling and rebuilding"
       if git checkout "$BRANCH" && git merge --ff-only "$REMOTE/$BRANCH"; then
-        docker compose -f "$COMPOSE_FILE" up -d --build
+        docker compose "${compose_args[@]}" up -d --build
         echo "→ deploy complete at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
       else
         echo "→ deploy failed; will retry" >&2

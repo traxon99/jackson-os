@@ -22,6 +22,7 @@ Environment=REMOTE=origin
 Environment=BRANCH=main
 Environment=INTERVAL_SEC=60
 Environment=COMPOSE_FILE=deploy/compose.yaml
+Environment=COMPOSE_OVERRIDE=deploy/compose.tunnel.yaml
 ExecStart=/home/YOUR_USER/jackson-os/deploy/watch-and-deploy.sh
 Restart=always
 RestartSec=10
