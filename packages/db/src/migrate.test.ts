@@ -21,4 +21,24 @@ describe('runTestMigrations', () => {
     );
     expect(rows.rows.length).toBeGreaterThan(0);
   });
+
+  it('enables RLS on every application table (Supabase Data API lockdown)', async () => {
+    conn = await openTestDb();
+    await runTestMigrations(conn);
+    const rows = await conn.client.query<{
+      relname: string;
+      relrowsecurity: boolean;
+    }>(
+      `SELECT c.relname, c.relrowsecurity
+       FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relkind = 'r'
+         AND c.relname NOT LIKE 'drizzle%'
+       ORDER BY c.relname`,
+    );
+    expect(rows.rows.length).toBe(9);
+    for (const row of rows.rows) {
+      expect(row.relrowsecurity, row.relname).toBe(true);
+    }
+  });
 });

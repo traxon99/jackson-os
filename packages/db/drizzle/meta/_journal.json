@@ -8,6 +8,13 @@
       "when": 1762233600000,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762598400000,
+      "tag": "0001_supabase_api_lockdown",
+      "breakpoints": true
     }
   ]
 }

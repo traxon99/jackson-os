@@ -33,7 +33,7 @@ node --input-type=module -e "
 "
 ```
 
-Alternatively, run the SQL in [`packages/db/drizzle/0000_initial.sql`](../packages/db/drizzle/0000_initial.sql) in the Supabase SQL editor.
+Alternatively, run the SQL in [`packages/db/drizzle/`](../packages/db/drizzle/) in the Supabase SQL editor (including [`0001_supabase_api_lockdown.sql`](../packages/db/drizzle/0001_supabase_api_lockdown.sql), which enables RLS and revokes Data API roles).
 
 The long-running server can use the session, direct, or transaction pooler URI. The driver already sets `prepare: false`.
 
@@ -41,7 +41,7 @@ The long-running server can use the session, direct, or transaction pooler URI. 
 
 1. Copy secrets and set `DATABASE_URL` (Supabase, or another Postgres you run yourself).
 2. `docker compose -f deploy/compose.yaml up -d --build`
-3. Optional public ingress: Cloudflare Tunnel (`--profile tunnel`).
+3. Optional public ingress: Cloudflare Tunnel (`--profile tunnel`), merging [`deploy/compose.tunnel.yaml`](../deploy/compose.tunnel.yaml) so `TRUST_CLOUDFLARE=true` (per-IP rate limits behind the proxy).
 
 The app listens on port 8080. `APP_ORIGIN` must be the URL browsers use (`http://localhost:8080` on the machine, or the public HTTPS origin).
 
@@ -55,7 +55,7 @@ The app listens on port 8080. `APP_ORIGIN` must be the URL browsers use (`http:/
 | `SETUP_TOKEN`                             | First start      | ≥32 chars; one-time setup. Compose reads `SETUP_TOKEN_FILE=/run/secrets/setup_token`          |
 | `CRON_SECRET`                             | No               | Optional bearer for `POST /api/cron/tick`. Dataset refresh uses the in-process scheduler      |
 | `AGENT_API_TOKEN`                         | No               | Optional bearer for `/api/agent` (Grok Bot). See [AGENT-INTEGRATION.md](AGENT-INTEGRATION.md) |
-| `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS                                                         |
+| `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS (set automatically via `compose.tunnel.yaml`)           |
 | `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional         | Same as local                                                                                 |
 
 `DISABLE_SCHEDULER=true` turns the in-process scheduler off.
@@ -78,7 +78,7 @@ Pushes and pull requests run [.github/workflows/ci.yml](../.github/workflows/ci.
 
 ## Auto-deploy on this host
 
-GitHub Actions does not deploy. On the machine that runs Compose, keep a clone checked out on `main` and start the watcher. It polls `origin/main` and runs `docker compose up -d --build` when that branch moves.
+GitHub Actions does not deploy. On the machine that runs Compose, keep a clone checked out on `main` and start the watcher. It polls `origin/main` and runs `docker compose up -d --build` when that branch moves. The sample systemd unit sets `COMPOSE_OVERRIDE=deploy/compose.tunnel.yaml` for the tunnel host.
 
 ```bash
 ./deploy/watch-and-deploy.sh
