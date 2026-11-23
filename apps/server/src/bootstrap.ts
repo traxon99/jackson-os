@@ -4,6 +4,7 @@ import type { Hono } from 'hono';
 import { type AppStack, createApp } from './app.js';
 import {
   type AppConfig,
+  ConfigError,
   loadConfig,
   logDisabledSources,
   SECRET_KEYS,
@@ -13,6 +14,7 @@ import {
 import { createSnapshotStore } from './data/snapshots.js';
 import { createLifecycle, type Lifecycle } from './lifecycle.js';
 import { createLogger } from './log.js';
+import { type CamerasConfig, parseCameras } from './routes/cameras.js';
 import { createAuthServices } from './routes/mount-auth.js';
 import { createRunner } from './scheduler/run-dataset.js';
 import { createScheduler } from './scheduler/scheduler.js';
@@ -40,6 +42,30 @@ function isSourceEnabled(config: AppConfig, sourceId: string): boolean {
     return false;
   }
   return status[key] === 'enabled';
+}
+
+function camerasConfig(
+  config: AppConfig,
+  warn: (message: string) => void,
+): CamerasConfig | undefined {
+  let list: ReturnType<typeof parseCameras>;
+  try {
+    list = parseCameras(config.CAMERAS);
+  } catch (error) {
+    throw new ConfigError(error instanceof Error ? error.message : 'CAMERAS');
+  }
+  if (list.length === 0) {
+    return undefined;
+  }
+  if (config.MEDIAMTX_HLS_URL === undefined) {
+    warn('CAMERAS is set but MEDIAMTX_HLS_URL is not; cameras disabled');
+    return undefined;
+  }
+  return {
+    cameras: list,
+    hlsUrl: config.MEDIAMTX_HLS_URL,
+    apiUrl: config.MEDIAMTX_API_URL,
+  };
 }
 
 export async function buildApp(
@@ -112,6 +138,7 @@ export async function buildApp(
   };
 
   const auth = createAuthServices(stack);
+  const cameras = camerasConfig(config, (message) => logger.warn(message));
 
   const app = createApp({
     ...config,
@@ -125,6 +152,7 @@ export async function buildApp(
     },
     stack,
     cronSecret: config.CRON_SECRET,
+    cameras,
   });
 
   const lifecycle = createLifecycle();

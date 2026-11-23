@@ -4,6 +4,7 @@ import { RecoveryCodesView } from './auth/RecoveryCodesView.js';
 import { SetupPage } from './auth/SetupPage.js';
 import { SignInPage } from './auth/SignInPage.js';
 import { useAuth } from './auth/useAuth.js';
+import { CamerasPage } from './cameras/CamerasPage.js';
 import { Dashboard } from './dashboard/Dashboard.js';
 import { InstallHint } from './pwa/InstallHint.js';
 import { PasskeysPage } from './settings/PasskeysPage.js';
@@ -49,7 +50,13 @@ export function App() {
   } else {
     content = (
       <AppShell path={path}>
-        {path === '/settings/passkeys' ? <PasskeysPage /> : <Dashboard />}
+        {path === '/settings/passkeys' ? (
+          <PasskeysPage />
+        ) : path === '/cameras' ? (
+          <CamerasPage />
+        ) : (
+          <Dashboard />
+        )}
       </AppShell>
     );
   }

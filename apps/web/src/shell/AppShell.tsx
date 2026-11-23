@@ -10,6 +10,7 @@ export type View = { id: string; label: string; href: string };
 /** Every place the command bar and side nav can go. Add new views here. */
 export const views: View[] = [
   { id: 'dashboard', label: 'dashboard', href: '/' },
+  { id: 'cameras', label: 'cameras', href: '/cameras' },
   { id: 'passkeys', label: 'passkeys', href: '/settings/passkeys' },
 ];
 

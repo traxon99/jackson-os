@@ -57,6 +57,7 @@ The app listens on port 8080. `APP_ORIGIN` must be the URL browsers use (`http:/
 | `AGENT_API_TOKEN`                         | No               | Optional bearer for `/api/agent` (Grok Bot). See [AGENT-INTEGRATION.md](AGENT-INTEGRATION.md) |
 | `TRUST_CLOUDFLARE`                        | Behind the proxy | `true` when Cloudflare terminates TLS (set automatically via `compose.tunnel.yaml`)           |
 | `JIM_PAT`, `GITHUB_TOKEN`, `CLOUDFLARE_*` | Optional         | Same as local                                                                                 |
+| `CAMERAS`, `MEDIAMTX_*`                   | Optional         | Live cameras; set by `deploy/compose.cameras.yaml`. See [CAMERAS.md](CAMERAS.md)              |
 
 `DISABLE_SCHEDULER=true` turns the in-process scheduler off.
 
@@ -90,3 +91,4 @@ For a persistent service, set the user and repo path in [deploy/jackson-os-autod
 
 - [docs/SECURITY.md](SECURITY.md) — auth recovery and `admin reset-auth`
 - [docs/PWA.md](PWA.md) — installable web app behavior
+- [docs/CAMERAS.md](CAMERAS.md) — live cameras (Raspberry Pi + server webcam)
