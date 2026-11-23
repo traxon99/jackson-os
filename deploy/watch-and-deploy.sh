@@ -8,7 +8,8 @@
 # Env:
 #   REMOTE=origin   BRANCH=main   INTERVAL_SEC=60
 #   COMPOSE_FILE=deploy/compose.yaml
-#   COMPOSE_OVERRIDE=deploy/compose.tunnel.yaml   # optional second -f (production tunnel host)
+#   COMPOSE_OVERRIDE=deploy/compose.tunnel.yaml   # optional extra -f files, space-separated
+#     e.g. "deploy/compose.tunnel.yaml deploy/compose.cameras.yaml" (docs/CAMERAS.md)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,9 +22,9 @@ COMPOSE_FILE="${COMPOSE_FILE:-deploy/compose.yaml}"
 COMPOSE_OVERRIDE="${COMPOSE_OVERRIDE:-}"
 
 compose_args=(-f "$COMPOSE_FILE")
-if [[ -n "$COMPOSE_OVERRIDE" ]]; then
-  compose_args+=(-f "$COMPOSE_OVERRIDE")
-fi
+for override in $COMPOSE_OVERRIDE; do
+  compose_args+=(-f "$override")
+done
 
 if ! git remote get-url "$REMOTE" >/dev/null 2>&1; then
   echo "Remote $REMOTE not configured." >&2

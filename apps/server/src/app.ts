@@ -16,6 +16,7 @@ import { rateLimitMiddleware } from './middleware/rate-limit.js';
 import { requestLogMiddleware } from './middleware/request-log.js';
 import { mountAgentRoutes } from './routes/agent.js';
 import { mountAuthSessionRoutes } from './routes/auth-session.js';
+import { type CamerasConfig, createCamerasRoutes } from './routes/cameras.js';
 import { mountAuthRoutes } from './routes/mount-auth.js';
 import { mountDataRoutes } from './routes/mount-data.js';
 import type { DatasetRunner } from './scheduler/run-dataset.js';
@@ -57,6 +58,8 @@ export type CreateAppConfig = Pick<AppConfig, 'WEB_DIST'> &
     authConfig?: AuthRouteConfig;
     stack?: AppStack;
     cronSecret?: string;
+    /** Live camera relay. Undefined means cameras are not configured. */
+    cameras?: CamerasConfig;
   };
 
 function resolveCreateAppConfig(
@@ -112,6 +115,8 @@ export function createApp(config: CreateAppConfig) {
   } else {
     api.all('/auth/*', (c) => c.json({ error: 'Not Found' }, 404));
   }
+
+  api.route('/cameras', createCamerasRoutes(config.cameras));
 
   if (config.stack !== undefined) {
     mountDataRoutes(api, config.stack, {

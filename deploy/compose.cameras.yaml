@@ -1,0 +1,29 @@
+# Live cameras: merge with deploy/compose.yaml (see docs/CAMERAS.md).
+#
+#   docker compose -f deploy/compose.yaml -f deploy/compose.cameras.yaml up -d --build
+#
+# The relay publishes no host ports. The app proxies HLS to signed-in
+# sessions only.
+services:
+  app:
+    environment:
+      CAMERAS: ${CAMERAS:-pi=Pi cam,webcam=Desk webcam}
+      MEDIAMTX_HLS_URL: http://mediamtx:8888
+      MEDIAMTX_API_URL: http://mediamtx:9997
+    depends_on:
+      - mediamtx
+
+  mediamtx:
+    # The -ffmpeg variant bundles ffmpeg (with libx264) for the webcam.
+    image: bluenviron/mediamtx:1.21.4-ffmpeg
+    restart: unless-stopped
+    command: ["/mediamtx.yml"]
+    volumes:
+      - ./cameras/mediamtx.yml:/mediamtx.yml:ro
+    environment:
+      # Pi source with its read password; set in deploy/.env (gitignored).
+      MTX_PATHS_PI_SOURCE: ${PI_CAMERA_URL:-publisher}
+    devices:
+      # USB webcam on a Linux host. Change the left side if yours is not
+      # /dev/video0 (`v4l2-ctl --list-devices`).
+      - ${WEBCAM_DEVICE:-/dev/video0}:/dev/video0

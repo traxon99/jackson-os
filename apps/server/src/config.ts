@@ -31,6 +31,9 @@ const configSchema = z.object({
   GITHUB_TOKEN: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
   CLOUDFLARE_ZONE_ID: z.string().optional(),
+  CAMERAS: z.string().optional(),
+  MEDIAMTX_HLS_URL: z.string().url().optional(),
+  MEDIAMTX_API_URL: z.string().url().optional(),
   TRUST_CLOUDFLARE: z
     .enum(['true', 'false'])
     .optional()
@@ -152,6 +155,10 @@ export function resolveFileVars(
   return resolved;
 }
 
+function emptyToUndefined(value: string | undefined): string | undefined {
+  return value === undefined || value.trim() === '' ? undefined : value;
+}
+
 export function loadConfig(
   env: Record<string, string | undefined>,
   readFile: ReadFileFn = (path) => readFileSync(path, 'utf8'),
@@ -173,6 +180,9 @@ export function loadConfig(
     GITHUB_TOKEN: resolvedEnv.GITHUB_TOKEN,
     CLOUDFLARE_API_TOKEN: resolvedEnv.CLOUDFLARE_API_TOKEN,
     CLOUDFLARE_ZONE_ID: resolvedEnv.CLOUDFLARE_ZONE_ID,
+    CAMERAS: emptyToUndefined(resolvedEnv.CAMERAS),
+    MEDIAMTX_HLS_URL: emptyToUndefined(resolvedEnv.MEDIAMTX_HLS_URL),
+    MEDIAMTX_API_URL: emptyToUndefined(resolvedEnv.MEDIAMTX_API_URL),
     TRUST_CLOUDFLARE: resolvedEnv.TRUST_CLOUDFLARE,
   };
 

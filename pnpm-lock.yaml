@@ -69,6 +69,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.105.2(@types/react@19.3.0)(react@19.3.1)
+      hls.js:
+        specifier: 1.6.15
+        version: 1.6.15
       react:
         specifier: ^19.1.0
         version: 19.3.1
@@ -1690,6 +1693,9 @@ packages:
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
+
+  hls.js@1.6.15:
+    resolution: {integrity: sha512-E3a5VwgXimGHwpRGV+WxRTKeSp2DW5DI5MWv34ulL3t5UNmyJWCQ1KmLEHbYzcfThfXG8amBL+fCYPneGHC4VA==}
 
   hono@4.13.16:
     resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
@@ -3526,6 +3532,8 @@ snapshots:
 
   github-from-package@0.0.0:
     optional: true
+
+  hls.js@1.6.15: {}
 
   hono@4.13.16: {}
 

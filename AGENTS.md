@@ -40,3 +40,4 @@ Every PR must include a **How I verified** section: the commands you ran and eno
 - [docs/ADDING-A-SOURCE.md](docs/ADDING-A-SOURCE.md)
 - [docs/PWA.md](docs/PWA.md)
 - [docs/UI.md](docs/UI.md): design tokens, Paper Mono, widget building rules
+- [docs/CAMERAS.md](docs/CAMERAS.md): live camera relay (MediaMTX), Pi setup, `/api/cameras` proxy

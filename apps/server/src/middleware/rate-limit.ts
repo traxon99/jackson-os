@@ -20,11 +20,26 @@ export function rateLimitMiddleware(
     now: () => Date.now(),
   });
 
+  // HLS players fetch a playlist and a segment about every second per
+  // camera, which the general API bucket would throttle. Stream requests
+  // get their own, larger bucket; they still go through the session gate.
+  const streamLimiter = createLimiter({
+    capacity: 300,
+    refillPerSec: 20,
+    now: () => Date.now(),
+  });
+
   return async (c, next) => {
     const pathname = new URL(c.req.url).pathname;
     const isAuth =
       pathname === '/api/auth' || pathname.startsWith('/api/auth/');
-    const limiter = isAuth ? authLimiter : apiLimiter;
+    const isStream =
+      pathname.startsWith('/api/cameras/') && pathname.includes('/hls/');
+    const limiter = isAuth
+      ? authLimiter
+      : isStream
+        ? streamLimiter
+        : apiLimiter;
     const key = clientIp(c, config.trustCloudflare);
 
     if (!limiter.take(key)) {
